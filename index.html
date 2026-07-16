@@ -2045,11 +2045,14 @@ try { forceLandscape = localStorage.getItem('catgame-landscape') === '1'; } catc
 function isPortrait() { return window.innerHeight > window.innerWidth; }
 function cssRotated() { return $('app').classList.contains('force-landscape'); }
 
-// 依視窗方向套用：直式 + 開啟橫式 → CSS 旋轉 90°；並依呈現高度切換緊湊版面
+// 依視窗方向套用：直式 + 開啟橫式 → CSS 旋轉 90°。
+// 只要「呈現方向」是橫式且高度不大（手機/小平板），就切換側欄滿版版面——
+// 用長寬比判斷而非固定像素，各家裝置的 CSS 視窗尺寸差異很大。
 function applyOrientation() {
   $('app').classList.toggle('force-landscape', forceLandscape && isPortrait());
+  const presentedW = cssRotated() ? window.innerHeight : window.innerWidth;
   const presentedH = cssRotated() ? window.innerWidth : window.innerHeight;
-  $('app').classList.toggle('compact', presentedH < 500);
+  $('app').classList.toggle('compact', presentedW > presentedH && presentedH < 620);
   resizeBoard();
   if (G.state === 'home') drawPawBg();
 }
