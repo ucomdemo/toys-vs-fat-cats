@@ -1,0 +1,2234 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>玩具大戰胖貓咪</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+  :root {
+    --cream: #FFF6E9;
+    --carpet1: #FBEBD3;
+    --carpet2: #F6DEBE;
+    --wood: #E8C99B;
+    --orange: #F59B4B;
+    --orange-deep: #D97F2E;
+    --deep: #5C4432;
+    --gold: #F7C948;
+    --gold-deep: #DBA92A;
+    --pink: #F9A8C2;
+    --mint: #A8D8B9;
+    --sky: #CDE9F5;
+    --white: #FFFDF8;
+    --shadow: rgba(92, 68, 50, .18);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    font-family: "Yuanti TC", "YouYuan", "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", system-ui, sans-serif;
+    background: var(--cream);
+    color: var(--deep);
+    color-scheme: light;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+  }
+  #app {
+    position: fixed; inset: 0; overflow: hidden;
+    height: 100vh; height: 100dvh;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  .screen { position: absolute; inset: 0; display: flex; flex-direction: column; }
+  .hidden { display: none !important; }
+  button { font-family: inherit; color: inherit; cursor: pointer; touch-action: manipulation; }
+  button:focus-visible { outline: 3px solid var(--orange-deep); outline-offset: 2px; }
+
+  /* ---------- Home ---------- */
+  #home {
+    align-items: center; justify-content: center; gap: 14px;
+    background:
+      radial-gradient(ellipse 90% 55% at 50% 118%, var(--carpet1) 0 60%, transparent 61%),
+      linear-gradient(var(--sky), var(--cream) 72%);
+    text-align: center; padding: 20px; overflow-y: auto;
+  }
+  .paw-bg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; opacity: .5; }
+  #home h1 {
+    font-size: clamp(30px, 7vmin, 58px); letter-spacing: .06em; line-height: 1.25;
+    color: var(--deep); text-wrap: balance; position: relative;
+  }
+  #home h1 .vs {
+    display: inline-block; background: var(--orange); color: var(--white);
+    border-radius: 999px; font-size: .55em; padding: .18em .6em; margin: 0 .25em;
+    transform: rotate(-6deg); box-shadow: 0 3px 0 var(--orange-deep);
+  }
+  #home .tagline { font-size: clamp(14px, 2.6vmin, 18px); opacity: .85; letter-spacing: .12em; }
+  #heroCanvas { width: min(430px, 82vw); height: auto; }
+  .btn {
+    border: none; border-radius: 999px; font-weight: 700; letter-spacing: .08em;
+    padding: 14px 38px; font-size: clamp(17px, 3vmin, 22px);
+    background: var(--gold); color: var(--deep);
+    box-shadow: 0 5px 0 var(--gold-deep), 0 8px 14px var(--shadow);
+    transition: transform .08s, box-shadow .08s;
+  }
+  .btn:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--gold-deep); }
+  .btn.secondary { background: var(--white); box-shadow: 0 5px 0 #E3D5C0, 0 8px 14px var(--shadow); }
+  .btn.secondary:active { box-shadow: 0 1px 0 #E3D5C0; }
+  .home-note { font-size: 13px; opacity: .65; letter-spacing: .1em; }
+
+  /* ---------- Modal ---------- */
+  .modal {
+    position: absolute; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center;
+    background: rgba(92, 68, 50, .45); padding: 18px;
+  }
+  .card {
+    background: var(--white); border-radius: 26px; padding: 26px 24px; max-width: 420px; width: 100%;
+    max-height: 88vh; max-height: 88dvh; overflow-y: auto;
+    box-shadow: 0 18px 40px rgba(60, 40, 20, .35); text-align: center;
+    display: flex; flex-direction: column; gap: 14px; align-items: center;
+  }
+  .card h2 { font-size: 22px; letter-spacing: .1em; }
+  #qrCanvas { width: min(260px, 62vw); height: auto; image-rendering: pixelated; border-radius: 8px; }
+  #qrUrl { font-size: 12px; word-break: break-all; opacity: .7; max-width: 300px; user-select: text; -webkit-user-select: text; }
+  .howto { text-align: left; font-size: 15px; line-height: 1.9; }
+  .howto b { color: var(--orange-deep); }
+
+  /* ---------- Game ---------- */
+  #game { background: linear-gradient(var(--sky) 0, var(--cream) 90px); }
+  #hud {
+    display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+    flex-wrap: wrap; justify-content: center;
+  }
+  .hud-chip {
+    display: flex; align-items: center; gap: 6px; background: var(--white);
+    border-radius: 999px; padding: 6px 14px; font-weight: 700; font-size: 16px;
+    box-shadow: 0 2px 0 #E3D5C0; white-space: nowrap; font-variant-numeric: tabular-nums;
+  }
+  .hud-chip .ico { font-size: 18px; }
+  #hudHearts span { transition: opacity .3s, transform .3s; display: inline-block; }
+  #hudHearts span.off { opacity: .2; transform: scale(.75); }
+  .hud-btn {
+    border: none; background: var(--white); border-radius: 999px;
+    width: 42px; height: 42px; font-size: 19px; box-shadow: 0 2px 0 #E3D5C0;
+  }
+  .hud-btn:active { transform: translateY(2px); box-shadow: none; }
+  #boardWrap { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 0; padding: 2px 6px; position: relative; }
+  #board { display: block; border-radius: 14px; box-shadow: 0 10px 24px var(--shadow); touch-action: none; }
+
+  #banner {
+    position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%) scale(0);
+    background: var(--orange); color: var(--white); z-index: 20; pointer-events: none;
+    font-size: clamp(22px, 5vmin, 40px); font-weight: 800; letter-spacing: .15em;
+    padding: .5em 1.2em; border-radius: 999px; box-shadow: 0 6px 0 var(--orange-deep), 0 10px 24px var(--shadow);
+    white-space: nowrap;
+  }
+  #banner.show { animation: bannerPop 2.4s ease forwards; }
+  @keyframes bannerPop {
+    0% { transform: translate(-50%, -50%) scale(0) rotate(-8deg); }
+    16% { transform: translate(-50%, -50%) scale(1.06) rotate(2deg); }
+    24% { transform: translate(-50%, -50%) scale(1); }
+    82% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(.6); opacity: 0; }
+  }
+
+  /* ---------- Toy bar ---------- */
+  #toybar { display: flex; gap: 10px; justify-content: center; padding: 6px 8px 12px; }
+  .toy-card {
+    position: relative; border: 3px solid transparent; border-radius: 18px;
+    background: var(--white); box-shadow: 0 3px 0 #E3D5C0;
+    width: 96px; padding: 6px 4px 7px; display: flex; flex-direction: column; align-items: center; gap: 1px;
+    overflow: hidden; transition: transform .1s;
+  }
+  .toy-card canvas { width: 52px; height: 52px; pointer-events: none; }
+  .toy-card .tname { font-size: 13px; font-weight: 700; letter-spacing: .04em; pointer-events: none; }
+  .toy-card .tcost { font-size: 13px; font-weight: 700; color: var(--gold-deep); pointer-events: none; font-variant-numeric: tabular-nums; }
+  .toy-card.sel { border-color: var(--orange); transform: translateY(-4px); box-shadow: 0 7px 0 var(--orange-deep); }
+  .toy-card.dim { filter: grayscale(.7); opacity: .6; }
+  .toy-card .cd {
+    position: absolute; left: 0; bottom: 0; width: 100%; height: 0%;
+    background: rgba(92, 68, 50, .35); pointer-events: none;
+  }
+  .toy-card.shake { animation: cardShake .3s; }
+  @keyframes cardShake { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+  #rotateHint {
+    position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); z-index: 30;
+    background: rgba(92, 68, 50, .85); color: var(--white); font-size: 13px;
+    padding: 8px 16px; border-radius: 999px; letter-spacing: .08em; white-space: nowrap;
+    pointer-events: none;
+  }
+
+  /* ---------- Overlays ---------- */
+  .overlay {
+    position: absolute; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center;
+    background: rgba(92, 68, 50, .5); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); padding: 18px;
+  }
+  #game.paused #banner.show { animation-play-state: paused; }
+  .overlay .card { gap: 12px; }
+  .overlay h2 { font-size: clamp(26px, 6vmin, 38px); letter-spacing: .12em; }
+  .overlay .sub { font-size: 15px; opacity: .8; line-height: 1.8; }
+  .overlay .btn { width: 100%; max-width: 260px; }
+  #endCatCanvas { width: 150px; height: 110px; }
+  .stats { display: flex; gap: 18px; font-size: 14px; font-weight: 700; }
+  .stats div { background: var(--cream); border-radius: 14px; padding: 8px 16px; font-variant-numeric: tabular-nums; }
+  .stats small { display: block; font-weight: 400; opacity: .7; }
+
+  .confetti { position: absolute; top: -24px; font-size: 22px; animation: confFall linear forwards; pointer-events: none; z-index: 45; }
+  @keyframes confFall { to { transform: translateY(115vh) rotate(720deg); } }
+  /* 橫向矮螢幕（手機橫拿）：壓縮 HUD 與卡片，把空間留給戰場 */
+  @media (max-height: 500px) {
+    #hud { padding: 4px 8px; gap: 6px; }
+    .hud-chip { font-size: 13px; padding: 3px 10px; }
+    .hud-btn { width: 34px; height: 34px; font-size: 15px; }
+    #toybar { padding: 3px 6px 6px; gap: 8px; }
+    .toy-card { width: 78px; padding: 3px 2px 4px; }
+    .toy-card canvas { width: 34px; height: 34px; }
+    .toy-card .tname { font-size: 11px; }
+    .toy-card .tcost { font-size: 11px; }
+    #home { justify-content: flex-start; gap: 10px; }
+    #heroCanvas { width: min(300px, 55vw); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .confetti { display: none; }
+    #banner.show { animation-duration: 2.4s; }
+    .toy-card, .btn { transition: none; }
+  }
+</style>
+
+</head>
+<body>
+<div id="app">
+
+  <!-- ===== 首頁 ===== -->
+  <div id="home" class="screen">
+    <canvas class="paw-bg" id="pawBg"></canvas>
+    <h1>玩具<span class="vs">大戰</span>胖貓咪</h1>
+    <p class="tagline">守住廚房的罐罐，別讓胖貓咪闖進來！</p>
+    <canvas id="heroCanvas" width="860" height="300" aria-hidden="true"></canvas>
+    <button class="btn" id="btnStart">🐾 開始遊戲</button>
+    <button class="btn secondary" id="btnQR">📱 手機掃 QR Code 遊玩</button>
+    <button class="btn secondary" id="btnHow">🎀 玩法說明</button>
+    <p class="home-note">免登入・支援電腦滑鼠與手機觸控</p>
+  </div>
+
+  <!-- ===== QR Modal ===== -->
+  <div id="qrModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="QR Code">
+    <div class="card">
+      <h2>📱 掃描立即遊玩</h2>
+      <canvas id="qrCanvas"></canvas>
+      <p id="qrUrl"></p>
+      <button class="btn" id="btnQrClose">關閉</button>
+    </div>
+  </div>
+
+  <!-- ===== 玩法說明 Modal ===== -->
+  <div id="howModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="玩法說明">
+    <div class="card">
+      <h2>🎀 玩法說明</h2>
+      <div class="howto">
+        <p>🔔 <b>撿鈴鐺</b>：點擊場上出現的鈴鐺賺取資源。</p>
+        <p>🧸 <b>放玩具</b>：先點下方玩具卡，再點格子佈置。</p>
+        <p>🛎️ <b>鈴鐺不倒翁</b>（50）：定時搖出鈴鐺。</p>
+        <p>🪶 <b>逗貓羽毛棒</b>（100）：發射羽毛安撫貓咪。</p>
+        <p>📦 <b>瓦楞紙箱</b>（50）：超耐抓，擋住貓咪去路。</p>
+        <p>❤️ 貓咪溜進廚房會扣<b>愛心</b>，愛心歸零就輸了。</p>
+        <p>🐱 <b>五種胖貓咪</b>：橘貓、灰貓、三花、白貓，還有壓軸大魔王「<b>麥可喵克森</b>」！</p>
+        <p>🏆 撐過 <b>5 波</b>進攻、送走大魔王就獲勝！</p>
+      </div>
+      <button class="btn" id="btnHowClose">知道了！</button>
+    </div>
+  </div>
+
+  <!-- ===== 遊戲 ===== -->
+  <div id="game" class="screen hidden">
+    <div id="hud">
+      <div class="hud-chip" id="hudBells"><span class="ico">🔔</span><span id="bellCount">0</span></div>
+      <div class="hud-chip" id="hudHearts" aria-label="愛心"><span>❤️</span><span>❤️</span><span>❤️</span></div>
+      <div class="hud-chip" id="hudWave">第 1 / 5 波</div>
+      <button class="hud-btn" id="btnMute" aria-label="音效開關">🔊</button>
+      <button class="hud-btn" id="btnPause" aria-label="暫停">⏸️</button>
+    </div>
+    <div id="boardWrap">
+      <canvas id="board"></canvas>
+      <div id="banner"></div>
+      <div id="rotateHint" class="hidden">💡 手機橫向遊玩體驗更棒！</div>
+    </div>
+    <div id="toybar"></div>
+  </div>
+
+  <!-- ===== 暫停 ===== -->
+  <div id="pauseOverlay" class="overlay hidden">
+    <div class="card">
+      <h2>☕ 休息一下</h2>
+      <p class="sub">貓咪們也在原地打盹…</p>
+      <button class="btn" id="btnResume">▶️ 繼續遊戲</button>
+      <button class="btn secondary" id="btnRestart">🔄 重新開始</button>
+      <button class="btn secondary" id="btnPauseHome">🏠 回首頁</button>
+    </div>
+  </div>
+
+  <!-- ===== 勝負 ===== -->
+  <div id="endOverlay" class="overlay hidden">
+    <div class="card">
+      <h2 id="endTitle"></h2>
+      <canvas id="endCatCanvas" width="300" height="220" aria-hidden="true"></canvas>
+      <p class="sub" id="endText"></p>
+      <div class="stats">
+        <div><span id="statCats">0</span> 隻<small>安撫的貓咪</small></div>
+        <div><span id="statTime">0:00</span><small>守護時間</small></div>
+      </div>
+      <button class="btn" id="btnAgain">🔄 再玩一次</button>
+      <button class="btn secondary" id="btnEndHome">🏠 回首頁</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+'use strict';
+/* =====================================================================
+   玩具大戰胖貓咪 — 單檔塔防遊戲
+   ===================================================================== */
+
+// 正式網址（免登入，首頁 QR Code 使用）
+const GAME_URL = "https://ucomdemo.github.io/toys-vs-fat-cats/";
+
+/* ============================ QR 編碼器 ============================ */
+/* Byte mode, EC level L, versions 1–6.（已用 jsQR 解碼驗證） */
+const QR = (() => {
+  const EXP = new Uint8Array(512), LOG = new Uint8Array(256);
+  { let x = 1;
+    for (let i = 0; i < 255; i++) { EXP[i] = x; LOG[x] = i; x <<= 1; if (x & 0x100) x ^= 0x11d; }
+    for (let i = 255; i < 512; i++) EXP[i] = EXP[i - 255]; }
+  const mul = (a, b) => (a === 0 || b === 0) ? 0 : EXP[LOG[a] + LOG[b]];
+  function rsGen(deg) {
+    let p = [1];
+    for (let i = 0; i < deg; i++) {
+      const n = new Array(p.length + 1).fill(0);
+      for (let j = 0; j < p.length; j++) { n[j] ^= mul(p[j], EXP[i]); n[j + 1] ^= p[j]; }
+      p = n;
+    }
+    return p.reverse();
+  }
+  function rsEncode(data, ec) {
+    const g = rsGen(ec), res = new Uint8Array(data.length + ec);
+    res.set(data);
+    for (let i = 0; i < data.length; i++) {
+      const f = res[i];
+      if (!f) continue;
+      for (let j = 1; j < g.length; j++) res[i + j] ^= mul(g[j], f);
+    }
+    return res.slice(data.length);
+  }
+  const VER = {
+    1: { blocks: [19], ec: 7, align: [] },
+    2: { blocks: [34], ec: 10, align: [6, 18] },
+    3: { blocks: [55], ec: 15, align: [6, 22] },
+    4: { blocks: [80], ec: 20, align: [6, 26] },
+    5: { blocks: [108], ec: 26, align: [6, 30] },
+    6: { blocks: [68, 68], ec: 18, align: [6, 34] },
+  };
+  function buildCodewords(bytes, v) {
+    const info = VER[v], total = info.blocks.reduce((a, b) => a + b, 0);
+    const bits = [];
+    const push = (val, len) => { for (let i = len - 1; i >= 0; i--) bits.push((val >> i) & 1); };
+    push(4, 4); push(bytes.length, 8);
+    for (const b of bytes) push(b, 8);
+    push(0, Math.min(4, total * 8 - bits.length));
+    while (bits.length % 8) bits.push(0);
+    const data = [];
+    for (let i = 0; i < bits.length; i += 8) {
+      let b = 0;
+      for (let j = 0; j < 8; j++) b = (b << 1) | bits[i + j];
+      data.push(b);
+    }
+    const pads = [0xec, 0x11]; let p = 0;
+    while (data.length < total) data.push(pads[p++ % 2]);
+    const blocks = []; let off = 0;
+    for (const len of info.blocks) { blocks.push(data.slice(off, off + len)); off += len; }
+    const ecs = blocks.map(b => rsEncode(Uint8Array.from(b), info.ec));
+    const out = [], maxLen = Math.max(...info.blocks);
+    for (let i = 0; i < maxLen; i++) for (const b of blocks) if (i < b.length) out.push(b[i]);
+    for (let i = 0; i < info.ec; i++) for (const e of ecs) out.push(e[i]);
+    return out;
+  }
+  function makeMatrix(v) {
+    const size = 17 + 4 * v, m = [], fn = [];
+    for (let r = 0; r < size; r++) { m.push(new Uint8Array(size)); fn.push(new Uint8Array(size)); }
+    const set = (r, c, val) => { m[r][c] = val; fn[r][c] = 1; };
+    const finder = (r0, c0) => {
+      for (let r = -1; r <= 7; r++) for (let c = -1; c <= 7; c++) {
+        const rr = r0 + r, cc = c0 + c;
+        if (rr < 0 || cc < 0 || rr >= size || cc >= size) continue;
+        const on = r >= 0 && r <= 6 && c >= 0 && c <= 6 &&
+          (r === 0 || r === 6 || c === 0 || c === 6 || (r >= 2 && r <= 4 && c >= 2 && c <= 4));
+        set(rr, cc, on ? 1 : 0);
+      }
+    };
+    finder(0, 0); finder(0, size - 7); finder(size - 7, 0);
+    for (let i = 8; i < size - 8; i++) {
+      if (!fn[6][i]) set(6, i, i % 2 === 0 ? 1 : 0);
+      if (!fn[i][6]) set(i, 6, i % 2 === 0 ? 1 : 0);
+    }
+    for (const r0 of VER[v].align) for (const c0 of VER[v].align) {
+      if (fn[r0][c0]) continue;
+      for (let r = -2; r <= 2; r++) for (let c = -2; c <= 2; c++)
+        set(r0 + r, c0 + c, Math.max(Math.abs(r), Math.abs(c)) !== 1 ? 1 : 0);
+    }
+    for (let i = 0; i < 9; i++) {
+      if (!fn[8][i]) set(8, i, 0);
+      if (!fn[i][8]) set(i, 8, 0);
+    }
+    for (let i = 0; i < 8; i++) {
+      if (!fn[8][size - 1 - i]) set(8, size - 1 - i, 0);
+      if (!fn[size - 1 - i][8]) set(size - 1 - i, 8, 0);
+    }
+    set(4 * v + 9, 8, 1);
+    return { m, fn, size };
+  }
+  const MASKS = [
+    (r, c) => (r + c) % 2 === 0,
+    (r, c) => r % 2 === 0,
+    (r, c) => c % 3 === 0,
+    (r, c) => (r + c) % 3 === 0,
+    (r, c) => (Math.floor(r / 2) + Math.floor(c / 3)) % 2 === 0,
+    (r, c) => ((r * c) % 2) + ((r * c) % 3) === 0,
+    (r, c) => (((r * c) % 2) + ((r * c) % 3)) % 2 === 0,
+    (r, c) => (((r + c) % 2) + ((r * c) % 3)) % 2 === 0,
+  ];
+  function placeData(m, fn, size, cw, mi) {
+    const bits = [];
+    for (const c of cw) for (let i = 7; i >= 0; i--) bits.push((c >> i) & 1);
+    let bi = 0, up = true;
+    for (let col = size - 1; col > 0; col -= 2) {
+      if (col === 6) col--;
+      for (let i = 0; i < size; i++) {
+        const row = up ? size - 1 - i : i;
+        for (const c of [col, col - 1]) {
+          if (fn[row][c]) continue;
+          const bit = bi < bits.length ? bits[bi] : 0;
+          bi++;
+          m[row][c] = bit ^ (MASKS[mi](row, c) ? 1 : 0);
+        }
+      }
+      up = !up;
+    }
+  }
+  function fmtBits(mi) {
+    const data = (0b01 << 3) | mi;
+    let rem = data << 10;
+    for (let i = 14; i >= 10; i--) if ((rem >> i) & 1) rem ^= 0b10100110111 << (i - 10);
+    return ((data << 10) | rem) ^ 0b101010000010010;
+  }
+  function drawFmt(m, size, mi) {
+    const f = fmtBits(mi), bit = i => (f >> i) & 1;
+    const c1 = [[8,0],[8,1],[8,2],[8,3],[8,4],[8,5],[8,7],[8,8],[7,8],[5,8],[4,8],[3,8],[2,8],[1,8],[0,8]];
+    for (let i = 0; i < 15; i++) m[c1[i][0]][c1[i][1]] = bit(14 - i);
+    for (let i = 0; i < 7; i++) m[size - 1 - i][8] = bit(14 - i);
+    for (let i = 0; i < 8; i++) m[8][size - 8 + i] = bit(7 - i);
+  }
+  function penalty(m, size) {
+    let s = 0;
+    for (let pass = 0; pass < 2; pass++) for (let r = 0; r < size; r++) {
+      let run = 1;
+      for (let c = 1; c <= size; c++) {
+        const cur = c < size ? (pass ? m[c][r] : m[r][c]) : -1;
+        const prev = pass ? m[c - 1][r] : m[r][c - 1];
+        if (c < size && cur === prev) run++;
+        else { if (run >= 5) s += 3 + (run - 5); run = 1; }
+      }
+    }
+    for (let r = 0; r < size - 1; r++) for (let c = 0; c < size - 1; c++) {
+      const v = m[r][c];
+      if (m[r][c + 1] === v && m[r + 1][c] === v && m[r + 1][c + 1] === v) s += 3;
+    }
+    const p1 = [1,0,1,1,1,0,1,0,0,0,0], p2 = [0,0,0,0,1,0,1,1,1,0,1];
+    for (let r = 0; r < size; r++) for (let c = 0; c <= size - 11; c++) {
+      let a = 1, b = 1, va = 1, vb = 1;
+      for (let i = 0; i < 11; i++) {
+        if (m[r][c + i] !== p1[i]) a = 0;
+        if (m[r][c + i] !== p2[i]) b = 0;
+        if (m[c + i][r] !== p1[i]) va = 0;
+        if (m[c + i][r] !== p2[i]) vb = 0;
+      }
+      s += (a + b + va + vb) * 40;
+    }
+    let dark = 0;
+    for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) dark += m[r][c];
+    s += Math.floor(Math.abs(dark * 100 / (size * size) - 50) / 5) * 10;
+    return s;
+  }
+  function encode(text) {
+    const bytes = [];
+    const enc = unescape(encodeURIComponent(text));
+    for (let i = 0; i < enc.length; i++) bytes.push(enc.charCodeAt(i));
+    let ver = null;
+    for (let v = 1; v <= 6; v++) {
+      const cap = VER[v].blocks.reduce((a, b) => a + b, 0);
+      if (12 + bytes.length * 8 <= cap * 8) { ver = v; break; }
+    }
+    if (!ver) return null;
+    const cw = buildCodewords(bytes, ver);
+    let best = null, bestS = Infinity;
+    for (let mi = 0; mi < 8; mi++) {
+      const { m, fn, size } = makeMatrix(ver);
+      placeData(m, fn, size, cw, mi);
+      drawFmt(m, size, mi);
+      const s = penalty(m, size);
+      if (s < bestS) { bestS = s; best = { modules: m, size }; }
+    }
+    return best;
+  }
+  return { encode };
+})();
+
+/* ============================ 音效 ============================ */
+const Sfx = (() => {
+  let ctx = null, master = null, muted = false;
+  try { muted = localStorage.getItem('catgame-muted') === '1'; } catch (e) {}
+  function ensure() {
+    if (!ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return false;
+      ctx = new AC();
+      master = ctx.createGain();
+      master.gain.value = 0.55;
+      master.connect(ctx.destination);
+    }
+    // iOS 中斷（來電/Siri）後 state 可能是非標準的 'interrupted'
+    if (ctx.state !== 'running') { try { ctx.resume(); } catch (e) {} }
+    return true;
+  }
+  function tone({ f0 = 440, f1 = null, dur = 0.2, type = 'sine', vol = 0.25, delay = 0, curve = 'exp' }) {
+    if (muted || !ensure()) return;
+    const t0 = ctx.currentTime + delay;
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(f0, t0);
+    if (f1 !== null) {
+      if (curve === 'exp') o.frequency.exponentialRampToValueAtTime(Math.max(f1, 1), t0 + dur);
+      else o.frequency.linearRampToValueAtTime(f1, t0 + dur);
+    }
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(vol, t0 + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+    o.connect(g); g.connect(master);
+    o.start(t0); o.stop(t0 + dur + 0.05);
+  }
+  const S = {
+    unlock() { ensure(); },
+    get muted() { return muted; },
+    toggleMute() {
+      muted = !muted;
+      try { localStorage.setItem('catgame-muted', muted ? '1' : '0'); } catch (e) {}
+      return muted;
+    },
+    ding(hi = false) {
+      const base = hi ? 1760 : 1318;
+      tone({ f0: base, dur: 0.45, type: 'sine', vol: 0.22 });
+      tone({ f0: base * 1.5, dur: 0.3, type: 'sine', vol: 0.1 });
+    },
+    plant() {
+      tone({ f0: 320, f1: 90, dur: 0.13, type: 'triangle', vol: 0.3 });
+      tone({ f0: 620, dur: 0.08, type: 'sine', vol: 0.12, delay: 0.05 });
+    },
+    shoot() { tone({ f0: 880, f1: 1500, dur: 0.09, type: 'sine', vol: 0.09 }); },
+    hit() { tone({ f0: 520, f1: 300, dur: 0.06, type: 'triangle', vol: 0.13 }); },
+    meow(pitch = 1) {
+      tone({ f0: 460 * pitch, f1: 780 * pitch, dur: 0.16, type: 'triangle', vol: 0.16 });
+      tone({ f0: 780 * pitch, f1: 360 * pitch, dur: 0.26, type: 'triangle', vol: 0.16, delay: 0.15 });
+    },
+    munch() { tone({ f0: 120, f1: 70, dur: 0.07, type: 'square', vol: 0.08 }); },
+    sleep() {
+      tone({ f0: 700, f1: 350, dur: 0.3, type: 'sine', vol: 0.14 });
+      tone({ f0: 520, f1: 260, dur: 0.35, type: 'sine', vol: 0.12, delay: 0.18 });
+    },
+    heartLost() {
+      tone({ f0: 420, f1: 200, dur: 0.22, type: 'sawtooth', vol: 0.16 });
+      tone({ f0: 300, f1: 140, dur: 0.3, type: 'sawtooth', vol: 0.16, delay: 0.18 });
+    },
+    wave() {
+      tone({ f0: 330, f1: 392, dur: 0.3, type: 'square', vol: 0.1 });
+      tone({ f0: 392, f1: 494, dur: 0.35, type: 'square', vol: 0.1, delay: 0.25 });
+    },
+    win() {
+      [523, 659, 784, 1047, 1319].forEach((f, i) =>
+        tone({ f0: f, dur: 0.45, type: 'triangle', vol: 0.2, delay: i * 0.14 }));
+    },
+    lose() {
+      [392, 330, 262, 196].forEach((f, i) =>
+        tone({ f0: f, dur: 0.5, type: 'triangle', vol: 0.18, delay: i * 0.28 }));
+    },
+    heehee() {
+      tone({ f0: 1500, f1: 1150, dur: 0.08, type: 'square', vol: 0.09 });
+      tone({ f0: 1650, f1: 1250, dur: 0.09, type: 'square', vol: 0.09, delay: 0.1 });
+    },
+  };
+  return S;
+})();
+
+/* ============================ 小工具 ============================ */
+const rand = (a, b) => a + Math.random() * (b - a);
+const randi = (a, b) => Math.floor(rand(a, b + 1));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const $ = id => document.getElementById(id);
+
+function rr(ctx, x, y, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+/* ============================ 貓咪繪圖 ============================ */
+const CAT_STYLES = {
+  orange: { body: '#F7A75A', stripe: '#DE8A38', belly: '#FFE9CD', line: '#BE752A', tail: 'tabby', pattern: 'tabby', pitch: 1.1 },
+  gray:   { body: '#B6BFCB', stripe: '#93A0AF', belly: '#EAEEF3', line: '#82909F', tail: 'tabby', pattern: 'tabby', pitch: 1.35 },
+  calico: { body: '#FFF5E6', stripe: '#F2A254', belly: '#FFFBF4', line: '#C0AB8E', tail: 'solid', patch: ['#F2A254', '#7A6455'], pattern: 'calico', pitch: 1.0 },
+  white:  { body: '#FFFDF9', stripe: '#F1E6DA', belly: '#FFFFFF', line: '#CFC0B1', tail: 'puff', pattern: 'fluffy', pitch: 0.9 },
+  // 大魔王「麥可喵克森」：黑白燕尾服貓 + 黑禮帽 + 白手套
+  boss:   { body: '#43434B', stripe: '#33333A', belly: '#FFFFFF', line: '#26262C', tail: 'solid', pattern: 'tux', pitch: 0.55 },
+};
+
+// 吐司麵包形身體路徑：置中於 x=0，底部在 y=0，頂部在 y=-h
+function catLoaf(ctx, w, h) {
+  const rT = Math.min(h * 0.5, w * 0.66), rB = Math.min(h * 0.28, w * 0.42);
+  ctx.beginPath();
+  ctx.moveTo(-w + rB, 0);
+  ctx.arcTo(-w, 0, -w, -rB, rB);
+  ctx.lineTo(-w, -h + rT);
+  ctx.arcTo(-w, -h, -w + rT, -h, rT);
+  ctx.lineTo(w - rT, -h);
+  ctx.arcTo(w, -h, w, -h + rT, rT);
+  ctx.lineTo(w, -rB);
+  ctx.arcTo(w, 0, w - rB, 0, rB);
+  ctx.closePath();
+}
+
+// 側面走路姿（頭在左、長身體）。由 drawCat 分派，座標系已置於腳底中央。
+function drawCatSide(ctx, s, st, t, o) {
+  const lw = o.lw;
+  const W2 = s * 1.42, H2 = s * 1.0;
+
+  // 尾巴（屁股端翹起搖擺）
+  const wag = Math.sin(t * 4.5) * 0.25;
+  ctx.save();
+  ctx.translate(W2 * 0.92, -H2 * 0.6);
+  ctx.rotate(-0.9 + wag * 0.3);
+  ctx.fillStyle = st.body;
+  ctx.strokeStyle = st.line;
+  ctx.lineWidth = lw;
+  if (st.tail === 'puff') {
+    ctx.beginPath();
+    ctx.arc(s * 0.26, 0, s * 0.3, 0, 7);
+    ctx.fill();
+    ctx.stroke();
+  } else {
+    ctx.beginPath();
+    ctx.ellipse(s * 0.4, 0, s * 0.52, s * 0.19, 0, 0, 7);
+    ctx.fill();
+    ctx.stroke();
+    if (st.tail === 'tabby') {
+      ctx.save();
+      ctx.clip();
+      ctx.fillStyle = st.stripe;
+      ctx.fillRect(s * 0.38, -s * 0.25, s * 0.12, s * 0.5);
+      ctx.fillRect(s * 0.62, -s * 0.25, s * 0.12, s * 0.5);
+      ctx.restore();
+    }
+  }
+  ctx.restore();
+
+  // 長吐司身體
+  ctx.fillStyle = st.body;
+  ctx.strokeStyle = st.line;
+  ctx.lineWidth = lw;
+  catLoaf(ctx, W2, H2);
+  ctx.fill();
+  ctx.stroke();
+
+  // 身體花色
+  ctx.save();
+  catLoaf(ctx, W2, H2);
+  ctx.clip();
+  if (st.pattern === 'tabby') {
+    ctx.strokeStyle = st.stripe;
+    ctx.lineWidth = s * 0.12;
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.15 + i * s * 0.45, -H2 - 2);
+      ctx.lineTo(-s * 0.15 + i * s * 0.45, -H2 + s * 0.24);
+      ctx.stroke();
+    }
+  } else if (st.pattern === 'calico') {
+    ctx.fillStyle = st.patch[0];
+    ctx.beginPath();
+    ctx.ellipse(W2 * 0.45, -H2 * 0.8, s * 0.4, s * 0.32, 0.2, 0, 7);
+    ctx.fill();
+    ctx.fillStyle = st.patch[1];
+    ctx.beginPath();
+    ctx.ellipse(-W2 * 0.15, -H2 * 0.92, s * 0.3, s * 0.24, -0.2, 0, 7);
+    ctx.fill();
+  } else if (st.pattern === 'tux') {
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath();
+    ctx.ellipse(-W2 * 0.5, -H2 * 0.4, s * 0.5, s * 0.45, 0, 0, 7);
+    ctx.fill();
+  }
+  ctx.fillStyle = st.belly;
+  ctx.beginPath();
+  ctx.ellipse(0, s * 0.05, W2 * 0.7, s * 0.32, 0, 0, 7);
+  ctx.fill();
+  ctx.restore();
+
+  // 腳掌分縫
+  ctx.strokeStyle = st.line;
+  ctx.lineWidth = lw * 0.85;
+  for (const px2 of [-s * 0.75, -s * 0.15, s * 0.5]) {
+    ctx.beginPath();
+    ctx.moveTo(px2, 0);
+    ctx.lineTo(px2, -s * 0.12);
+    ctx.stroke();
+  }
+
+  // 頭（前上方圓頭）
+  const hx = -W2 * 0.72, hy = -H2 - s * 0.28, hr = s * 0.62;
+  // 耳朵
+  for (const [ex, rot] of [[-0.32, -0.15], [0.34, 0.15]]) {
+    ctx.fillStyle = (st.pattern === 'calico' && ex > 0) ? st.patch[1] : st.body;
+    ctx.strokeStyle = st.line;
+    ctx.lineWidth = lw;
+    ctx.save();
+    ctx.translate(hx + ex * hr * 1.35, hy - hr * 0.62);
+    ctx.rotate(rot);
+    ctx.beginPath();
+    ctx.moveTo(-s * 0.17, s * 0.22);
+    ctx.quadraticCurveTo(-s * 0.1, -s * 0.28, s * 0.06, -s * 0.22);
+    ctx.quadraticCurveTo(s * 0.2, -s * 0.05, s * 0.17, s * 0.22);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
+  ctx.fillStyle = st.body;
+  ctx.strokeStyle = st.line;
+  ctx.lineWidth = lw;
+  ctx.beginPath();
+  ctx.arc(hx, hy, hr, 0, 7);
+  ctx.fill();
+  ctx.stroke();
+  // 頭花色
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(hx, hy, hr, 0, 7);
+  ctx.clip();
+  if (st.pattern === 'calico') {
+    ctx.fillStyle = st.patch[0];
+    ctx.beginPath();
+    ctx.ellipse(hx + hr * 0.55, hy - hr * 0.5, s * 0.32, s * 0.26, 0.3, 0, 7);
+    ctx.fill();
+  } else if (st.pattern === 'tabby') {
+    ctx.strokeStyle = st.stripe;
+    ctx.lineWidth = s * 0.11;
+    for (let i = -1; i <= 1; i++) {
+      ctx.beginPath();
+      ctx.moveTo(hx + i * s * 0.2, hy - hr);
+      ctx.lineTo(hx + i * s * 0.2, hy - hr + s * (i === 0 ? 0.26 : 0.16));
+      ctx.stroke();
+    }
+  } else if (st.pattern === 'tux') {
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath();
+    ctx.ellipse(hx - hr * 0.5, hy + hr * 0.3, s * 0.42, s * 0.36, 0.2, 0, 7);
+    ctx.fill();
+  }
+  ctx.restore();
+  // 內耳
+  ctx.fillStyle = '#F6B7C4';
+  for (const [ex, rot] of [[-0.32, -0.15], [0.34, 0.15]]) {
+    ctx.save();
+    ctx.translate(hx + ex * hr * 1.35, hy - hr * 0.66);
+    ctx.rotate(rot);
+    ctx.beginPath();
+    ctx.ellipse(0, -s * 0.02, s * 0.08, s * 0.12, 0, 0, 7);
+    ctx.fill();
+    ctx.restore();
+  }
+  // 臉（朝行進方向）
+  const ex0 = hx - hr * 0.35, ey0 = hy - hr * 0.05;
+  ctx.fillStyle = 'rgba(246,140,159,.42)';
+  ctx.beginPath();
+  ctx.ellipse(ex0 + s * 0.05, ey0 + s * 0.28, s * 0.13, s * 0.08, 0, 0, 7);
+  ctx.fill();
+  if (o.happy) {
+    ctx.strokeStyle = '#5A4634';
+    ctx.lineWidth = s * 0.055;
+    ctx.beginPath();
+    ctx.arc(ex0, ey0 + s * 0.05, s * 0.1, Math.PI * 1.12, Math.PI * 1.88);
+    ctx.stroke();
+  } else {
+    ctx.fillStyle = '#453626';
+    ctx.beginPath();
+    ctx.arc(ex0, ey0, s * 0.11, 0, 7);
+    ctx.fill();
+    ctx.fillStyle = '#FFF';
+    ctx.beginPath();
+    ctx.arc(ex0 - s * 0.03, ey0 - s * 0.04, s * 0.038, 0, 7);
+    ctx.fill();
+  }
+  // 鼻嘴（頭的前緣）
+  ctx.fillStyle = '#F2778E';
+  ctx.beginPath();
+  ctx.ellipse(hx - hr * 0.92, hy + hr * 0.12, s * 0.045, s * 0.035, 0, 0, 7);
+  ctx.fill();
+  ctx.strokeStyle = '#5A4634';
+  ctx.lineWidth = s * 0.04;
+  ctx.beginPath();
+  ctx.arc(hx - hr * 0.82, hy + hr * 0.24, s * 0.07, Math.PI * 0.15, Math.PI * 0.95);
+  ctx.stroke();
+  // 鬍鬚
+  ctx.strokeStyle = 'rgba(90,70,52,.5)';
+  ctx.lineWidth = s * 0.033;
+  for (let i = 0; i < 2; i++) {
+    ctx.beginPath();
+    ctx.moveTo(hx - hr * 0.75, hy + hr * (0.3 + i * 0.18));
+    ctx.quadraticCurveTo(hx - hr * 1.25, hy + hr * (0.28 + i * 0.22), hx - hr * 1.45, hy + hr * (0.36 + i * 0.26));
+    ctx.stroke();
+  }
+  // 吃東西揮手手
+  if (o.eating) {
+    const sw = Math.sin(t * 10) * s * 0.12;
+    ctx.fillStyle = st.body;
+    ctx.strokeStyle = st.line;
+    ctx.lineWidth = lw * 0.85;
+    ctx.beginPath();
+    ctx.ellipse(-W2 * 1.0, -s * 0.45 + sw, s * 0.14, s * 0.2, 0.35, 0, 7);
+    ctx.fill();
+    ctx.stroke();
+  }
+  // 受擊閃白
+  if (o.flash > 0) {
+    ctx.globalAlpha = Math.min(o.flash * 4, 0.7);
+    ctx.fillStyle = '#FFF';
+    catLoaf(ctx, W2, H2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(hx, hy, hr, 0, 7);
+    ctx.fill();
+  }
+}
+
+// 胖嘟嘟麵包貓。s = 尺寸基準，錨點在腳底中央，面朝左前方。
+// opt: eating / sleeping+sleepT / flash / alpha / pose('front'|'side') / stretch(0~1 伸懶腰) / moonwalk
+function drawCat(ctx, x, y, s, style, t, opt = {}) {
+  const st = CAT_STYLES[style];
+  const eating = opt.eating, sleeping = opt.sleeping;
+  const stretch = opt.stretch || 0;
+  const happy = eating || stretch > 0.1;
+  const bob = (sleeping || stretch > 0) ? 0 : Math.sin(t * 7) * 0.04;
+  ctx.save();
+  ctx.translate(x, y);
+  if (opt.moonwalk) ctx.scale(-1, 1); // 月球漫步：轉身倒著滑
+  if (sleeping) {
+    ctx.translate(0, -s * 0.2);
+    ctx.rotate(Math.PI / 2 * clamp(opt.sleepT * 2.4, 0, 1));
+    ctx.translate(0, s * 0.2);
+    ctx.globalAlpha = clamp((1.6 - opt.sleepT) / 0.6, 0, 1);
+  }
+  if (opt.alpha !== undefined) ctx.globalAlpha *= opt.alpha;
+  if (stretch > 0) ctx.scale(1 + stretch * 0.3, 1 - stretch * 0.24); // 伸懶腰：拉長壓扁
+
+  const lw = Math.max(1.5, s * 0.065);
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+
+  // 影子
+  if (!sleeping) {
+    ctx.fillStyle = 'rgba(92,68,50,.12)';
+    ctx.beginPath();
+    ctx.ellipse(0, 1, s * (opt.pose === 'side' ? 1.5 : 1.05), s * 0.15, 0, 0, 7);
+    ctx.fill();
+  }
+
+  // 側面姿勢走另一套畫法
+  if (opt.pose === 'side' && !sleeping) {
+    drawCatSide(ctx, s, st, t, { eating, happy, lw, flash: opt.flash });
+    ctx.restore();
+    return;
+  }
+
+  const W = s * 1.04 * (1 - bob * 0.4);
+  const H = s * 1.5 * (1 + bob);
+
+  // 尾巴（身後右側，搖擺的胖尾巴）
+  const wag = sleeping ? 0 : Math.sin(t * 4.5) * 0.3;
+  ctx.save();
+  ctx.translate(W * 0.8, -H * 0.3);
+  ctx.rotate(-0.7 + wag * 0.35);
+  ctx.fillStyle = st.body;
+  ctx.strokeStyle = st.line;
+  ctx.lineWidth = lw;
+  if (st.tail === 'puff') {
+    ctx.beginPath();
+    ctx.arc(s * 0.36, 0, s * 0.32, 0, 7);
+    ctx.fill();
+    ctx.stroke();
+  } else {
+    ctx.beginPath();
+    ctx.ellipse(s * 0.44, 0, s * 0.56, s * 0.2, 0, 0, 7);
+    ctx.fill();
+    ctx.stroke();
+    if (st.tail === 'tabby') {
+      ctx.save();
+      ctx.clip();
+      ctx.fillStyle = st.stripe;
+      ctx.fillRect(s * 0.42, -s * 0.25, s * 0.13, s * 0.5);
+      ctx.fillRect(s * 0.68, -s * 0.25, s * 0.13, s * 0.5);
+      ctx.restore();
+    }
+  }
+  ctx.restore();
+
+  // 耳朵（先畫，讓身體蓋住底部）
+  const earX = W * 0.55, earY = -H * 0.96, earW = s * 0.34, earH = s * 0.44;
+  for (const sx of [-1, 1]) {
+    ctx.fillStyle = (st.pattern === 'calico' && sx > 0) ? st.patch[1] : st.body;
+    ctx.strokeStyle = st.line;
+    ctx.lineWidth = lw;
+    ctx.beginPath();
+    ctx.moveTo(sx * (earX - earW), earY + s * 0.32);
+    ctx.quadraticCurveTo(sx * (earX - earW * 0.35), earY - earH, sx * (earX + earW * 0.3), earY - earH * 0.68);
+    ctx.quadraticCurveTo(sx * (earX + earW), earY - earH * 0.1, sx * (earX + earW * 0.62), earY + s * 0.32);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  // 身體吐司
+  ctx.fillStyle = st.body;
+  ctx.strokeStyle = st.line;
+  ctx.lineWidth = lw;
+  catLoaf(ctx, W, H);
+  ctx.fill();
+  ctx.stroke();
+
+  // 內耳
+  ctx.fillStyle = '#F6B7C4';
+  for (const sx of [-1, 1]) {
+    ctx.beginPath();
+    ctx.ellipse(sx * earX * 1.0, earY - earH * 0.3, earW * 0.3, earH * 0.32, sx * 0.3, 0, 7);
+    ctx.fill();
+  }
+
+  // 花色（裁切在身體內）
+  ctx.save();
+  catLoaf(ctx, W, H);
+  ctx.clip();
+  if (st.pattern === 'tabby') {
+    ctx.strokeStyle = st.stripe;
+    ctx.lineWidth = s * 0.13;
+    for (let i = -1; i <= 1; i++) {
+      ctx.beginPath();
+      ctx.moveTo(i * s * 0.27, -H - 2);
+      ctx.lineTo(i * s * 0.27, -H + s * (i === 0 ? 0.32 : 0.2));
+      ctx.stroke();
+    }
+    for (let i = 0; i < 2; i++) {
+      ctx.beginPath();
+      ctx.moveTo(W + 2, -H * (0.56 + i * 0.2));
+      ctx.lineTo(W - s * 0.28, -H * (0.52 + i * 0.2));
+      ctx.stroke();
+    }
+  } else if (st.pattern === 'calico') {
+    ctx.fillStyle = st.patch[0];
+    ctx.beginPath();
+    ctx.ellipse(-W * 0.62, -H * 0.9, s * 0.44, s * 0.4, 0.3, 0, 7);
+    ctx.fill();
+    ctx.fillStyle = st.patch[1];
+    ctx.beginPath();
+    ctx.ellipse(W * 0.8, -H * 0.4, s * 0.34, s * 0.3, -0.4, 0, 7);
+    ctx.fill();
+  } else if (st.pattern === 'fluffy') {
+    ctx.fillStyle = '#FAEFE2';
+    ctx.beginPath();
+    ctx.ellipse(W * 0.55, -H * 0.95, s * 0.38, s * 0.28, -0.3, 0, 7);
+    ctx.fill();
+  } else if (st.pattern === 'tux') {
+    // 白胸口 + 白臉頰
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath();
+    ctx.ellipse(-s * 0.1, -H * 0.52, s * 0.68, s * 0.55, 0, 0, 7);
+    ctx.fill();
+  }
+  // 肚肚
+  ctx.fillStyle = st.belly;
+  ctx.beginPath();
+  ctx.ellipse(-s * 0.08, s * 0.06, s * 0.7, s * 0.46, 0, 0, 7);
+  ctx.fill();
+  ctx.restore();
+
+  // 臉（略偏前進方向）
+  const fx = -s * 0.1, fy = -H * 0.6;
+  // 腮紅
+  ctx.fillStyle = 'rgba(246,140,159,.42)';
+  for (const sx of [-1, 1]) {
+    ctx.beginPath();
+    ctx.ellipse(fx + sx * s * 0.56, fy + s * 0.2, s * 0.15, s * 0.09, 0, 0, 7);
+    ctx.fill();
+  }
+  // 眼睛
+  const eyeDX = s * 0.36;
+  if (sleeping) {
+    ctx.strokeStyle = '#5A4634';
+    ctx.lineWidth = s * 0.055;
+    for (const sx of [-1, 1]) {
+      ctx.beginPath();
+      ctx.arc(fx + sx * eyeDX, fy - s * 0.03, s * 0.1, Math.PI * 0.15, Math.PI * 0.85);
+      ctx.stroke();
+    }
+  } else if (happy) {
+    ctx.strokeStyle = '#5A4634';
+    ctx.lineWidth = s * 0.055;
+    for (const sx of [-1, 1]) {
+      ctx.beginPath();
+      ctx.arc(fx + sx * eyeDX, fy + s * 0.07, s * 0.1, Math.PI * 1.12, Math.PI * 1.88);
+      ctx.stroke();
+    }
+  } else {
+    for (const sx of [-1, 1]) {
+      ctx.fillStyle = '#453626';
+      ctx.beginPath();
+      ctx.arc(fx + sx * eyeDX, fy, s * 0.115, 0, 7);
+      ctx.fill();
+      ctx.fillStyle = '#FFF';
+      ctx.beginPath();
+      ctx.arc(fx + sx * eyeDX - s * 0.035, fy - s * 0.04, s * 0.04, 0, 7);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(fx + sx * eyeDX + s * 0.032, fy + s * 0.045, s * 0.018, 0, 7);
+      ctx.fill();
+    }
+  }
+  // 鼻子 + ω 嘴
+  ctx.fillStyle = '#F2778E';
+  ctx.beginPath();
+  ctx.ellipse(fx, fy + s * 0.13, s * 0.05, s * 0.038, 0, 0, 7);
+  ctx.fill();
+  ctx.strokeStyle = '#5A4634';
+  ctx.lineWidth = s * 0.045;
+  const mo = eating ? (Math.sin(t * 12) * 0.5 + 0.5) * s * 0.07 : 0;
+  for (const sx of [-1, 1]) {
+    ctx.beginPath();
+    ctx.arc(fx + sx * s * 0.075, fy + s * 0.16 + mo, s * 0.075, Math.PI * (sx < 0 ? 0.05 : 0.35), Math.PI * (sx < 0 ? 0.65 : 0.95));
+    ctx.stroke();
+  }
+  // 鬍鬚（每側兩根，微彎）
+  ctx.strokeStyle = 'rgba(90,70,52,.5)';
+  ctx.lineWidth = s * 0.035;
+  for (const sx of [-1, 1]) for (let i = 0; i < 2; i++) {
+    ctx.beginPath();
+    ctx.moveTo(fx + sx * s * 0.6, fy + s * (0.06 + i * 0.11));
+    ctx.quadraticCurveTo(fx + sx * s * 0.88, fy + s * (0.04 + i * 0.13), fx + sx * s * 1.0, fy + s * (0.1 + i * 0.17));
+    ctx.stroke();
+  }
+
+  // 腳掌分縫
+  if (!sleeping) {
+    ctx.strokeStyle = st.line;
+    ctx.lineWidth = lw * 0.85;
+    for (const px2 of [-s * 0.32, s * 0.14]) {
+      ctx.beginPath();
+      ctx.moveTo(px2, 0);
+      ctx.lineTo(px2, -s * 0.13);
+      ctx.stroke();
+    }
+  }
+
+  // 吃東西時揮小手手
+  if (eating) {
+    const sw = Math.sin(t * 10) * s * 0.12;
+    ctx.fillStyle = st.body;
+    ctx.strokeStyle = st.line;
+    ctx.lineWidth = lw * 0.85;
+    ctx.beginPath();
+    ctx.ellipse(-W * 0.98, -H * 0.32 + sw, s * 0.15, s * 0.22, 0.35, 0, 7);
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  // BOSS 麥可喵克森：白手套 + 亮片 + 黑禮帽
+  if (style === 'boss') {
+    const gw = Math.sin(t * 5.5) * s * 0.07;
+    ctx.fillStyle = '#FFFFFF';
+    ctx.strokeStyle = '#B9BAC6';
+    ctx.lineWidth = lw * 0.85;
+    ctx.beginPath();
+    ctx.ellipse(-W * 0.92, -H * 0.72 + gw, s * 0.16, s * 0.22, 0.35, 0, 7);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#FFE066';
+    for (let i = 0; i < 3; i++) {
+      const a = t * 4 + i * 2.1;
+      const sx2 = -W * 0.92 + Math.cos(a) * s * 0.32, sy2 = -H * 0.72 + gw + Math.sin(a) * s * 0.32;
+      ctx.beginPath();
+      ctx.moveTo(sx2, sy2 - s * 0.05);
+      ctx.lineTo(sx2 + s * 0.04, sy2);
+      ctx.lineTo(sx2, sy2 + s * 0.05);
+      ctx.lineTo(sx2 - s * 0.04, sy2);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.save();
+    ctx.translate(-s * 0.08, -H + s * 0.06);
+    ctx.rotate(-0.1);
+    ctx.fillStyle = '#26262B';
+    ctx.strokeStyle = '#131316';
+    ctx.lineWidth = lw * 0.7;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, s * 0.66, s * 0.14, 0, 0, 7);
+    ctx.fill();
+    ctx.stroke();
+    rr(ctx, -s * 0.36, -s * 0.5, s * 0.72, s * 0.52, s * 0.12);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#EDEDF2';
+    ctx.fillRect(-s * 0.36, -s * 0.16, s * 0.72, s * 0.1);
+    ctx.restore();
+  }
+
+  // 受擊閃白
+  if (opt.flash > 0) {
+    ctx.globalAlpha = Math.min(opt.flash * 4, 0.7);
+    ctx.fillStyle = '#FFF';
+    catLoaf(ctx, W, H);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+/* ============================ 玩具繪圖 ============================ */
+// 鈴鐺不倒翁：anchor 腳底中央
+function drawBellToy(ctx, x, y, s, t, produce = 0) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(Math.sin(t * 2.6) * 0.09);
+  ctx.fillStyle = 'rgba(92,68,50,.13)';
+  ctx.beginPath();
+  ctx.ellipse(0, 1, s * 0.5, s * 0.11, 0, 0, 7);
+  ctx.fill();
+  // 鈴鐺主體
+  const g = ctx.createLinearGradient(-s * 0.4, -s, s * 0.4, 0);
+  g.addColorStop(0, '#FFDE73');
+  g.addColorStop(1, '#F0B429');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(0, -s * 0.55, s * 0.46, Math.PI, 0);
+  ctx.quadraticCurveTo(s * 0.52, -s * 0.12, s * 0.44, -s * 0.06);
+  ctx.lineTo(-s * 0.44, -s * 0.06);
+  ctx.quadraticCurveTo(-s * 0.52, -s * 0.12, -s * 0.46, -s * 0.55);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = '#C98F1B';
+  ctx.lineWidth = s * 0.04;
+  ctx.stroke();
+  // 底部鈴口橫桿 + 鈴舌
+  ctx.fillStyle = '#E5AE35';
+  ctx.strokeStyle = '#C98F1B';
+  ctx.lineWidth = s * 0.035;
+  rr(ctx, -s * 0.56, -s * 0.14, s * 1.12, s * 0.14, s * 0.07);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = '#C98F1B';
+  ctx.beginPath();
+  ctx.arc(0, -s * 0.02, s * 0.09, 0, 7);
+  ctx.fill();
+  // 蝴蝶結
+  ctx.fillStyle = '#F2778E';
+  for (const sx of [-1, 1]) {
+    ctx.beginPath();
+    ctx.ellipse(sx * s * 0.14, -s * 1.04, s * 0.13, s * 0.09, sx * 0.5, 0, 7);
+    ctx.fill();
+  }
+  ctx.beginPath();
+  ctx.arc(0, -s * 1.02, s * 0.06, 0, 7);
+  ctx.fill();
+  // 臉（比照貓咪的大眼睛）
+  for (const sx of [-1, 1]) {
+    ctx.fillStyle = '#6B4E20';
+    ctx.beginPath();
+    ctx.arc(sx * s * 0.17, -s * 0.6, s * 0.07, 0, 7);
+    ctx.fill();
+    ctx.fillStyle = '#FFF';
+    ctx.beginPath();
+    ctx.arc(sx * s * 0.17 - s * 0.02, -s * 0.63, s * 0.025, 0, 7);
+    ctx.fill();
+  }
+  ctx.strokeStyle = '#6B4E20';
+  ctx.lineWidth = s * 0.04;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.arc(0, -s * 0.5, s * 0.06, Math.PI * 0.15, Math.PI * 0.85);
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(246,140,159,.45)';
+  for (const sx of [-1, 1]) {
+    ctx.beginPath();
+    ctx.ellipse(sx * s * 0.32, -s * 0.5, s * 0.08, s * 0.05, 0, 0, 7);
+    ctx.fill();
+  }
+  // 生產閃光
+  if (produce > 0) {
+    ctx.globalAlpha = produce;
+    ctx.fillStyle = '#FFF3B0';
+    for (let i = 0; i < 5; i++) {
+      const a = t * 3 + i * Math.PI * 2 / 5;
+      ctx.beginPath();
+      ctx.arc(Math.cos(a) * s * 0.7, -s * 0.55 + Math.sin(a) * s * 0.7, s * 0.05, 0, 7);
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+// 逗貓羽毛棒：發射羽毛
+function drawWandToy(ctx, x, y, s, t, recoil = 0) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.fillStyle = 'rgba(92,68,50,.13)';
+  ctx.beginPath();
+  ctx.ellipse(0, 1, s * 0.42, s * 0.1, 0, 0, 7);
+  ctx.fill();
+  ctx.rotate(-0.32 + Math.sin(t * 2) * 0.04 + recoil * 0.5);
+  // 木棒
+  ctx.strokeStyle = '#B07E4C';
+  ctx.lineWidth = s * 0.11;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(s * 0.16, 0);
+  ctx.lineTo(-s * 0.14, -s * 1.05);
+  ctx.stroke();
+  // 繩子
+  ctx.strokeStyle = '#8C6A48';
+  ctx.lineWidth = s * 0.035;
+  ctx.beginPath();
+  ctx.moveTo(-s * 0.14, -s * 1.05);
+  ctx.quadraticCurveTo(-s * 0.3, -s * 1.2, -s * 0.42, -s * 1.1);
+  ctx.stroke();
+  // 羽毛簇
+  const cols = ['#F9A8C2', '#F2778E', '#FBC6CE'];
+  for (let i = 0; i < 3; i++) {
+    ctx.save();
+    ctx.translate(-s * 0.42, -s * 1.1);
+    ctx.rotate(-0.7 + i * 0.55 + Math.sin(t * 3 + i) * 0.08);
+    ctx.fillStyle = cols[i];
+    ctx.beginPath();
+    ctx.ellipse(0, -s * 0.22, s * 0.09, s * 0.26, 0, 0, 7);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,.7)';
+    ctx.lineWidth = s * 0.02;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(0, -s * 0.42);
+    ctx.stroke();
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+// 瓦楞紙箱：dmg 0~1 越高越破
+function drawBoxToy(ctx, x, y, s, t, dmg = 0) {
+  ctx.save();
+  ctx.translate(x, y);
+  const squish = 1 - dmg * 0.12;
+  ctx.fillStyle = 'rgba(92,68,50,.13)';
+  ctx.beginPath();
+  ctx.ellipse(0, 1, s * 0.55, s * 0.11, 0, 0, 7);
+  ctx.fill();
+  const w = s * 1.0, h = s * 0.92 * squish;
+  // 箱體
+  ctx.fillStyle = '#D9AE78';
+  rr(ctx, -w / 2, -h, w, h, s * 0.06);
+  ctx.fill();
+  ctx.strokeStyle = '#B58755';
+  ctx.lineWidth = s * 0.045;
+  ctx.stroke();
+  // 上蓋外翻
+  ctx.fillStyle = '#C89B63';
+  for (const sx of [-1, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(sx * w / 2, -h);
+    ctx.lineTo(sx * (w / 2 + s * 0.2), -h - s * 0.18);
+    ctx.lineTo(sx * (w / 2 + s * 0.16), -h + s * 0.02);
+    ctx.closePath();
+    ctx.fill();
+  }
+  // 膠帶
+  ctx.fillStyle = 'rgba(168,216,185,.85)';
+  ctx.fillRect(-s * 0.09, -h, s * 0.18, h);
+  // 喵字樣
+  ctx.fillStyle = '#8C6A48';
+  ctx.font = `700 ${s * 0.3}px "Yuanti TC","Microsoft JhengHei",sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.save();
+  ctx.translate(-s * 0.26, -h * 0.5);
+  ctx.rotate(-0.12);
+  ctx.fillText('喵', 0, 0);
+  ctx.restore();
+  // 抓痕
+  if (dmg > 0.3) {
+    ctx.strokeStyle = '#FBF3E4';
+    ctx.lineWidth = s * 0.035;
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath();
+      ctx.moveTo(w * 0.12 + i * s * 0.09, -h * 0.85);
+      ctx.lineTo(w * 0.02 + i * s * 0.09, -h * 0.35);
+      ctx.stroke();
+    }
+  }
+  if (dmg > 0.65) {
+    ctx.strokeStyle = '#FBF3E4';
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath();
+      ctx.moveTo(-w * 0.38 + i * s * 0.09, -h * 0.7);
+      ctx.lineTo(-w * 0.46 + i * s * 0.09, -h * 0.22);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+// 鈴鐺（資源）
+function drawBell(ctx, x, y, s, t, blink = 1) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.globalAlpha = blink;
+  ctx.rotate(Math.sin(t * 3) * 0.12);
+  const g = ctx.createRadialGradient(-s * 0.2, -s * 0.3, s * 0.1, 0, 0, s);
+  g.addColorStop(0, '#FFEB99');
+  g.addColorStop(1, '#F0B429');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(0, -s * 0.1, s * 0.72, Math.PI, 0);
+  ctx.quadraticCurveTo(s * 0.8, s * 0.42, s * 0.66, s * 0.5);
+  ctx.lineTo(-s * 0.66, s * 0.5);
+  ctx.quadraticCurveTo(-s * 0.8, s * 0.42, -s * 0.72, -s * 0.1);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = '#C98F1B';
+  ctx.lineWidth = s * 0.09;
+  ctx.stroke();
+  ctx.fillStyle = '#C98F1B';
+  ctx.beginPath();
+  ctx.arc(0, s * 0.52, s * 0.14, 0, 7);
+  ctx.fill();
+  ctx.fillStyle = '#8C6A15';
+  ctx.beginPath();
+  ctx.arc(0, -s * 0.75, s * 0.13, 0, 7);
+  ctx.fill();
+  // 閃光
+  ctx.fillStyle = 'rgba(255,255,255,.85)';
+  ctx.beginPath();
+  ctx.ellipse(-s * 0.28, -s * 0.32, s * 0.13, s * 0.2, 0.5, 0, 7);
+  ctx.fill();
+  ctx.restore();
+}
+
+// 罐罐（廚房目標物）
+function drawCan(ctx, x, y, s) {
+  ctx.save();
+  ctx.translate(x, y);
+  const g = ctx.createLinearGradient(-s, 0, s, 0);
+  g.addColorStop(0, '#CBD3DC');
+  g.addColorStop(0.45, '#F2F6FA');
+  g.addColorStop(1, '#B9C3CE');
+  ctx.fillStyle = g;
+  ctx.strokeStyle = '#94A0AD';
+  ctx.lineWidth = 1.6;
+  rr(ctx, -s, -s * 0.85, s * 2, s * 1.5, s * 0.22);
+  ctx.fill();
+  ctx.stroke();
+  // 粉紅標籤 + 小魚
+  ctx.fillStyle = '#F58EA8';
+  ctx.fillRect(-s, -s * 0.32, s * 2, s * 0.6);
+  ctx.fillStyle = '#FFF';
+  ctx.beginPath();
+  ctx.ellipse(-s * 0.18, -s * 0.02, s * 0.4, s * 0.19, 0, 0, 7);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(s * 0.2, -s * 0.02);
+  ctx.lineTo(s * 0.52, -s * 0.26);
+  ctx.lineTo(s * 0.52, s * 0.22);
+  ctx.closePath();
+  ctx.fill();
+  // 罐頂
+  ctx.fillStyle = '#AEB9C4';
+  ctx.strokeStyle = '#94A0AD';
+  ctx.beginPath();
+  ctx.ellipse(0, -s * 0.85, s, s * 0.26, 0, 0, 7);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,.5)';
+  ctx.beginPath();
+  ctx.ellipse(-s * 0.3, -s * 0.88, s * 0.35, s * 0.1, -0.1, 0, 7);
+  ctx.fill();
+  ctx.restore();
+}
+
+// 羽毛（子彈）：尖端朝飛行方向（右），微幅擺動
+function drawFeather(ctx, x, y, s, t) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(Math.sin(t * 10) * 0.12);
+  ctx.fillStyle = '#F9A8C2';
+  ctx.strokeStyle = '#E87A9B';
+  ctx.lineWidth = s * 0.08;
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.moveTo(s, 0);
+  ctx.quadraticCurveTo(s * 0.2, -s * 0.42, -s * 0.85, -s * 0.18);
+  ctx.quadraticCurveTo(-s * 1.05, 0, -s * 0.85, s * 0.18);
+  ctx.quadraticCurveTo(s * 0.2, s * 0.42, s, 0);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,255,255,.9)';
+  ctx.lineWidth = s * 0.07;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(s * 0.65, 0);
+  ctx.lineTo(-s * 0.8, 0);
+  ctx.stroke();
+  ctx.restore();
+}
+
+/* ============================ 遊戲核心 ============================ */
+const COLS = 9, ROWS = 5;
+const CELL_W = 96, CELL_H = 104;
+const LEFT = 56;
+const BOARD_W = LEFT + COLS * CELL_W;   // 920
+const BOARD_H = ROWS * CELL_H;          // 520
+
+const TOYS = {
+  bell: { name: '鈴鐺不倒翁', cost: 50, hp: 90, cd: 6 },
+  wand: { name: '逗貓羽毛棒', cost: 100, hp: 110, cd: 5 },
+  box:  { name: '瓦楞紙箱', cost: 50, hp: 420, cd: 10 },
+};
+const CATS = {
+  orange: { hp: 110, speed: 14, dmg: 28, size: 34 },
+  gray:   { hp: 85,  speed: 26, dmg: 26, size: 31 },
+  calico: { hp: 170, speed: 15, dmg: 34, size: 36 },
+  white:  { hp: 260, speed: 10, dmg: 40, size: 38 },
+  boss:   { hp: 950, speed: 7,  dmg: 85, size: 56 },
+};
+const WAVES = [
+  { label: '第 1 波來襲！', spawns: [[0, 'orange'], [15, 'orange'], [28, 'orange']] },
+  { label: '第 2 波來襲！', spawns: [[0, 'orange'], [9, 'gray'], [17, 'orange'], [25, 'orange'], [32, 'gray'], [38, 'orange']] },
+  { label: '第 3 波來襲！', spawns: [[0, 'calico'], [7, 'orange'], [13, 'gray'], [19, 'orange'], [25, 'calico'], [30, 'gray'], [35, 'orange'], [40, 'gray'], [44, 'orange']] },
+  { label: '第 4 波來襲！', spawns: [[0, 'white'], [6, 'orange'], [11, 'calico'], [15, 'gray'], [20, 'orange'], [24, 'white'], [28, 'calico'], [32, 'gray'], [36, 'orange'], [40, 'calico'], [44, 'gray'], [47, 'orange']] },
+  { label: '最終波！大魔王 麥可喵克森 登場！', spawns: [[0, 'gray'], [4, 'orange'], [8, 'white'], [12, 'calico'], [15, 'gray'], [18, 'orange'], [21, 'calico'], [24, 'white'], [27, 'gray'], [30, 'orange'], [33, 'calico'], [36, 'white'], [40, 'boss'], [46, 'gray'], [50, 'orange']] },
+];
+
+const G = {
+  state: 'home',   // home | playing | paused | end
+  bells: 125, hearts: 3,
+  waveIdx: -1, waveT: 0, wavePhase: 'pre', // pre | banner | active
+  spawnQueue: [], grid: [], plants: [], cats: [], feathers: [], fieldBells: [], fx: [],
+  selected: null, cardCd: { bell: 0, wand: 0, box: 0 },
+  skyTimer: 5, time: 0, catsSoothed: 0, shake: 0,
+  lastRow: -1, hoverCell: null, won: false,
+};
+
+function resetGame() {
+  G.bells = 125; G.hearts = 3;
+  G.waveIdx = -1; G.waveT = 0; G.wavePhase = 'pre';
+  G.spawnQueue = [];
+  G.grid = Array.from({ length: ROWS }, () => new Array(COLS).fill(null));
+  G.plants = []; G.cats = []; G.feathers = []; G.fieldBells = []; G.fx = [];
+  G.selected = null;
+  G.cardCd = { bell: 0, wand: 0, box: 0 };
+  G.skyTimer = 5; G.time = 0; G.catsSoothed = 0; G.shake = 0;
+  G.lastRow = -1; G.hoverCell = null; G.won = false;
+  G.preT = 4;   // 開場準備時間
+  $('banner').classList.remove('show');
+  refreshCardSel();
+  updateHUD();
+}
+
+function pickRow() {
+  let r;
+  do { r = randi(0, ROWS - 1); } while (r === G.lastRow && Math.random() < 0.7);
+  G.lastRow = r;
+  return r;
+}
+
+function startWave(i) {
+  G.waveIdx = i;
+  G.waveT = 0;
+  G.wavePhase = 'banner';
+  const w = WAVES[i];
+  G.spawnQueue = w.spawns.map(([t, type]) => ({ t: t + 2.4, type })).sort((a, b) => a.t - b.t);
+  const banner = $('banner');
+  banner.textContent = w.label;
+  banner.classList.remove('show');
+  void banner.offsetWidth;
+  banner.classList.add('show');
+  Sfx.wave();
+  if (i > 0) {
+    G.bells += 50;
+    addFx('text', { x: BOARD_W / 2, y: 80, text: '波次獎勵 +50 🔔', life: 1.6, size: 26 });
+    Sfx.ding(true);
+  }
+  updateHUD();
+}
+
+function spawnCat(type) {
+  const row = pickRow();
+  const c = CATS[type];
+  G.cats.push({
+    type, row,
+    x: BOARD_W + 40,
+    hp: c.hp, maxHp: c.hp, speed: c.speed, dmg: c.dmg, size: c.size,
+    phase: rand(0, 6), eating: null, munchT: 0, flash: 0,
+    sleeping: false, sleepT: 0,
+    // 姿勢與動作：部分側面走路；走一走會停下伸懶腰；BOSS 會月球漫步
+    pose: type === 'boss' ? 'front' : (Math.random() < 0.45 ? 'side' : 'front'),
+    restIn: rand(6, 14), resting: false, stretchT: 0,
+    mwT: rand(0, 4), moonwalk: false,
+  });
+  Sfx.meow(CAT_STYLES[type].pitch);
+}
+
+function addFx(kind, props) { G.fx.push({ kind, t: 0, ...props }); }
+
+function catRowY(row) { return (row + 1) * CELL_H - 14; }
+function cellX(col) { return LEFT + col * CELL_W; }
+
+function plantAt(type, row, col) {
+  const t = TOYS[type];
+  const p = { type, row, col, hp: t.hp, maxHp: t.hp, timer: type === 'bell' ? 3.5 : 0, anim: 0, phase: rand(0, 6) };
+  G.grid[row][col] = p;
+  G.plants.push(p);
+  G.bells -= t.cost;
+  G.cardCd[type] = t.cd;
+  Sfx.plant();
+  addFx('puff', { x: cellX(col) + CELL_W / 2, y: catRowY(row) - 20, life: 0.45 });
+  updateHUD();
+}
+
+function spawnFieldBell(x, y, fromSky) {
+  G.fieldBells.push({
+    x: clamp(x, LEFT + 24, BOARD_W - 24),
+    y: clamp(y, 40, BOARD_H - 26),
+    born: 0, life: 9, value: 25, fromSky,
+    dropY: fromSky ? -40 : y - 30,
+  });
+}
+
+/* ---------- 更新 ---------- */
+function update(dt) {
+  G.time += dt;
+  G.shake = Math.max(0, G.shake - dt * 3);
+
+  // 卡片冷卻
+  for (const k in G.cardCd) G.cardCd[k] = Math.max(0, G.cardCd[k] - dt);
+
+  // 天降鈴鐺
+  G.skyTimer -= dt;
+  if (G.skyTimer <= 0) {
+    G.skyTimer = rand(7.5, 10.5);
+    spawnFieldBell(rand(LEFT + 40, BOARD_W - 40), rand(60, BOARD_H - 40), true);
+  }
+
+  // 波次流程
+  if (G.wavePhase === 'pre') {
+    G.preT -= dt;
+    if (G.preT <= 0) startWave(0);
+  } else {
+    G.waveT += dt;
+    if (G.wavePhase === 'banner' && G.waveT >= 2.4) G.wavePhase = 'active';
+    while (G.spawnQueue.length && G.waveT >= G.spawnQueue[0].t) {
+      spawnCat(G.spawnQueue.shift().type);
+    }
+    if (G.wavePhase === 'active' && !G.spawnQueue.length && !G.cats.length) {
+      if (G.waveIdx >= WAVES.length - 1) { endGame(true); return; }
+      startWave(G.waveIdx + 1);
+    }
+  }
+
+  // 玩具
+  for (const p of G.plants) {
+    p.anim = Math.max(0, p.anim - dt * 3);
+    if (p.type === 'bell') {
+      p.timer -= dt;
+      if (p.timer <= 0) {
+        p.timer = 7.5;
+        p.anim = 1;
+        spawnFieldBell(cellX(p.col) + CELL_W / 2 + rand(-30, 46), catRowY(p.row) + rand(-16, 4), false);
+        Sfx.ding();
+      }
+    } else if (p.type === 'wand') {
+      p.timer -= dt;
+      const px = cellX(p.col) + CELL_W / 2;
+      const target = G.cats.some(c => !c.sleeping && c.row === p.row && c.x > px + 8 && c.x < BOARD_W + 20);
+      if (p.timer <= 0 && target) {
+        p.timer = 1.4;
+        p.anim = 1;
+        G.feathers.push({ row: p.row, x: px + 26, t: 0 });
+        Sfx.shoot();
+      }
+    }
+  }
+
+  // 羽毛
+  for (const f of G.feathers) {
+    f.t += dt;
+    f.x += 300 * dt;
+    let hit = null;
+    for (const c of G.cats) {
+      if (!c.sleeping && c.row === f.row && Math.abs(c.x - f.x) < c.size * 0.85) {
+        if (!hit || c.x < hit.x) hit = c;
+      }
+    }
+    if (hit) {
+      f.dead = true;
+      hit.hp -= 26;
+      hit.flash = 0.25;
+      Sfx.hit();
+      addFx('spark', { x: f.x, y: catRowY(hit.row) - hit.size * 0.7, life: 0.3 });
+      if (hit.hp <= 0 && !hit.sleeping) {
+        hit.sleeping = true;
+        hit.sleepT = 0;
+        G.catsSoothed++;
+        Sfx.sleep();
+      }
+    }
+  }
+  G.feathers = G.feathers.filter(f => !f.dead && f.x < BOARD_W + 40);
+
+  // 貓咪
+  for (const c of G.cats) {
+    c.phase += dt;
+    c.flash = Math.max(0, c.flash - dt);
+    if (c.sleeping) {
+      c.sleepT += dt;
+      if (c.sleepT > 0.5 && Math.random() < dt * 2) {
+        addFx('zzz', { x: c.x, y: catRowY(c.row) - c.size * 1.5, life: 1.4 });
+      }
+      continue;
+    }
+    // BOSS 麥可喵克森：走 6 秒、月球漫步 3 秒（轉身倒滑 + 亮片）
+    if (c.type === 'boss') {
+      c.mwT += dt;
+      const mw = (c.mwT % 9) > 6;
+      if (mw && !c.moonwalk) Sfx.heehee();
+      c.moonwalk = mw;
+      if (mw && Math.random() < dt * 5) {
+        addFx('spark', { x: c.x + c.size * 0.9, y: catRowY(c.row) - c.size * rand(0.4, 1.4), life: 0.35 });
+      }
+    }
+    // 伸懶腰休息中：原地不動
+    if (c.resting) {
+      c.stretchT += dt;
+      c.eating = null;
+      if (c.stretchT >= 2.0) {
+        c.resting = false;
+        c.restIn = rand(9, 16);
+      }
+      continue;
+    }
+    // 前方是否有玩具（身體前緣，側面姿勢頭伸得比較長）
+    const frontX = c.x - c.size * (c.pose === 'side' ? 1.45 : 0.95);
+    const col = Math.floor((frontX - LEFT) / CELL_W);
+    let plant = null;
+    if (col >= 0 && col < COLS) {
+      const p = G.grid[c.row][col];
+      if (p && frontX <= cellX(col) + CELL_W * 0.72) plant = p;
+    }
+    if (plant) {
+      c.eating = plant;
+      c.munchT -= dt;
+      if (c.munchT <= 0) { c.munchT = 0.55; Sfx.munch(); }
+      plant.hp -= c.dmg * dt;
+      if (plant.hp <= 0) {
+        G.grid[plant.row][plant.col] = null;
+        G.plants = G.plants.filter(q => q !== plant);
+        addFx('puff', { x: cellX(plant.col) + CELL_W / 2, y: catRowY(plant.row) - 24, life: 0.5 });
+        c.eating = null;
+      }
+    } else {
+      c.eating = null;
+      c.x -= c.speed * dt * (c.moonwalk ? 1.6 : 1);
+      // 走一走停下來伸懶腰（BOSS 不休息，牠在忙著漫步）
+      if (c.type !== 'boss') {
+        c.restIn -= dt;
+        if (c.restIn <= 0 && c.x < BOARD_W - 40 && c.x > LEFT + 70) {
+          c.resting = true;
+          c.stretchT = 0;
+        }
+      }
+    }
+    // 溜進廚房
+    if (c.x < LEFT - 14) {
+      c.gone = true;
+      G.hearts--;
+      G.shake = 1;
+      Sfx.heartLost();
+      Sfx.meow(CAT_STYLES[c.type].pitch * 0.8);
+      updateHUD();
+      if (G.hearts <= 0) { endGame(false); return; }
+    }
+  }
+  G.cats = G.cats.filter(c => !c.gone && !(c.sleeping && c.sleepT > 1.6));
+
+  // 場上鈴鐺
+  for (const b of G.fieldBells) {
+    b.born += dt;
+    if (b.dropY < b.y) b.dropY = Math.min(b.y, b.dropY + 220 * dt);
+  }
+  G.fieldBells = G.fieldBells.filter(b => b.born < b.life);
+
+  // 特效
+  for (const e of G.fx) e.t += dt;
+  G.fx = G.fx.filter(e => e.t < e.life);
+
+  updateCards();
+}
+
+/* ---------- 勝負 ---------- */
+function endGame(won) {
+  G.state = 'end';
+  G.won = won;
+  const m = Math.floor(G.time / 60), s = Math.floor(G.time % 60);
+  $('statCats').textContent = G.catsSoothed;
+  $('statTime').textContent = `${m}:${String(s).padStart(2, '0')}`;
+  $('endTitle').textContent = won ? '🏆 守護成功！' : '😿 貓咪佔領了客廳…';
+  $('endText').textContent = won
+    ? '所有胖貓咪都玩累睡著了，罐罐安全無虞！'
+    : '胖貓咪們吃光了廚房的罐罐，再接再厲！';
+  $('endOverlay').classList.remove('hidden');
+  drawEndCat(won);
+  if (won) { Sfx.win(); dropConfetti(); }
+  else Sfx.lose();
+}
+
+function drawEndCat(won) {
+  const cv = $('endCatCanvas'), ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  let t0 = performance.now();
+  (function loop() {
+    if (G.state !== 'end') return;
+    const t = (performance.now() - t0) / 1000;
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    if (won) {
+      drawCat(ctx, 100, 190, 60, 'orange', 0, { sleeping: true, sleepT: 0.45 });
+      drawCat(ctx, 210, 195, 52, 'white', 0, { sleeping: true, sleepT: 0.45 });
+      ctx.font = '32px sans-serif';
+      ctx.fillText('💤', 200 + Math.sin(t * 2) * 8, 70 - Math.sin(t * 1.3) * 8);
+    } else {
+      drawCat(ctx, 150, 200, 66, 'boss', t, {});
+      ctx.font = '30px sans-serif';
+      ctx.fillText('🥫', 60 + Math.sin(t * 3) * 4, 100);
+      ctx.fillText('🥫', 240, 90 + Math.sin(t * 2.4) * 5);
+    }
+    requestAnimationFrame(loop);
+  })();
+}
+
+function dropConfetti() {
+  const emo = ['🎉', '🐾', '💛', '🔔', '🎀'];
+  for (let i = 0; i < 26; i++) {
+    const sp = document.createElement('span');
+    sp.className = 'confetti';
+    sp.textContent = emo[i % emo.length];
+    sp.style.left = rand(2, 96) + 'vw';
+    sp.style.animationDuration = rand(2.2, 4.5) + 's';
+    sp.style.animationDelay = rand(0, 1.2) + 's';
+    $('app').appendChild(sp);
+    setTimeout(() => sp.remove(), 6500);
+  }
+}
+
+/* ---------- 繪製 ---------- */
+const board = $('board');
+const bctx = board.getContext('2d');
+let viewScale = 1;
+
+function resizeBoard() {
+  const wrap = $('boardWrap');
+  const availW = wrap.clientWidth - 8, availH = wrap.clientHeight - 4;
+  const scale = Math.min(availW / BOARD_W, availH / BOARD_H);
+  const cssW = Math.floor(BOARD_W * scale), cssH = Math.floor(BOARD_H * scale);
+  const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+  board.style.width = cssW + 'px';
+  board.style.height = cssH + 'px';
+  board.width = Math.round(cssW * dpr);
+  board.height = Math.round(cssH * dpr);
+  viewScale = board.width / BOARD_W;
+  const showHint = window.innerHeight > window.innerWidth && window.innerWidth < 620 && !rotateHintDone;
+  $('rotateHint').classList.toggle('hidden', !showHint);
+  if (showHint && !rotateHintTimer) {
+    rotateHintTimer = setTimeout(() => {
+      rotateHintDone = true;
+      $('rotateHint').classList.add('hidden');
+    }, 6000);
+  }
+  // 重設 canvas 尺寸會清空點陣，凍結中的畫面（暫停/勝負結算）要立刻補畫
+  if (G.state === 'playing' || G.state === 'paused' || G.state === 'end') render();
+}
+let rotateHintDone = false, rotateHintTimer = 0;
+
+function render() {
+  const ctx = bctx;
+  ctx.setTransform(viewScale, 0, 0, viewScale, 0, 0);
+  const shakeX = G.shake > 0 ? Math.sin(G.shake * 40) * G.shake * 7 : 0;
+  ctx.translate(shakeX, 0);
+
+  // 地板
+  ctx.fillStyle = '#F1D9B5';
+  ctx.fillRect(-10, 0, BOARD_W + 20, BOARD_H);
+  // 左側廚房：暖木地板 + 直向板縫 + 門檻
+  const wg = ctx.createLinearGradient(0, 0, LEFT, 0);
+  wg.addColorStop(0, '#ECC998');
+  wg.addColorStop(1, '#DFB37C');
+  ctx.fillStyle = wg;
+  ctx.fillRect(-10, 0, LEFT + 10, BOARD_H);
+  ctx.strokeStyle = 'rgba(140,106,72,.22)';
+  ctx.lineWidth = 2;
+  for (const px of [18, 37]) {
+    ctx.beginPath();
+    ctx.moveTo(px, 0);
+    ctx.lineTo(px, BOARD_H);
+    ctx.stroke();
+  }
+  ctx.fillStyle = '#C89B63';
+  rr(ctx, LEFT - 5, -2, 5, BOARD_H + 4, 2);
+  ctx.fill();
+  // 罐罐（每列一個守護目標）
+  for (let r = 0; r < ROWS; r++) {
+    drawCan(ctx, 27, catRowY(r) - 18, 14);
+  }
+  // 地毯格子
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      ctx.fillStyle = (r + c) % 2 === 0 ? '#FBEBD3' : '#F6DEBE';
+      ctx.fillRect(cellX(c), r * CELL_H, CELL_W, CELL_H);
+    }
+  }
+  // 地毯織紋點
+  ctx.fillStyle = 'rgba(92,68,50,.05)';
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    ctx.beginPath();
+    ctx.arc(cellX(c) + CELL_W / 2, r * CELL_H + CELL_H / 2, 3, 0, 7);
+    ctx.fill();
+  }
+  // 右側牆面與貓門拱洞
+  ctx.fillStyle = '#E3C08F';
+  ctx.fillRect(BOARD_W - 26, 0, 36, BOARD_H);
+  ctx.fillStyle = '#C89B63';
+  rr(ctx, BOARD_W - 26, -2, 4, BOARD_H + 4, 2);
+  ctx.fill();
+  for (let r = 0; r < ROWS; r++) {
+    const dy = catRowY(r);
+    ctx.fillStyle = '#6B5138';
+    ctx.beginPath();
+    ctx.moveTo(BOARD_W - 24, dy);
+    ctx.lineTo(BOARD_W - 24, dy - 32);
+    ctx.arc(BOARD_W - 13, dy - 32, 11, Math.PI, 0);
+    ctx.lineTo(BOARD_W - 2, dy);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,241,214,.16)';
+    ctx.beginPath();
+    ctx.moveTo(BOARD_W - 20, dy);
+    ctx.lineTo(BOARD_W - 20, dy - 30);
+    ctx.arc(BOARD_W - 13, dy - 30, 7, Math.PI, 0);
+    ctx.lineTo(BOARD_W - 6, dy);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // 選擇玩具時的落點提示
+  if (G.selected && G.hoverCell) {
+    const [hr, hc] = G.hoverCell;
+    if (hr >= 0 && hr < ROWS && hc >= 0 && hc < COLS && !G.grid[hr][hc]) {
+      ctx.fillStyle = 'rgba(168,216,185,.4)';
+      rr(ctx, cellX(hc) + 3, hr * CELL_H + 3, CELL_W - 6, CELL_H - 6, 12);
+      ctx.fill();
+    }
+  }
+
+  // 依列繪製：玩具 → 貓
+  for (let r = 0; r < ROWS; r++) {
+    for (const p of G.plants) {
+      if (p.row !== r) continue;
+      const px = cellX(p.col) + CELL_W / 2, py = catRowY(r);
+      const t = G.time + p.phase;
+      if (p.type === 'bell') drawBellToy(bctx, px, py, 36, t, p.anim);
+      else if (p.type === 'wand') drawWandToy(bctx, px, py, 38, t, p.anim);
+      else drawBoxToy(bctx, px, py, 42, t, 1 - p.hp / p.maxHp);
+      // 血條（受損才顯示）
+      if (p.hp < p.maxHp) {
+        const bw = 52;
+        ctx.fillStyle = 'rgba(92,68,50,.25)';
+        rr(ctx, px - bw / 2, py - 92, bw, 7, 4);
+        ctx.fill();
+        ctx.fillStyle = '#7FC98B';
+        rr(ctx, px - bw / 2, py - 92, bw * clamp(p.hp / p.maxHp, 0, 1), 7, 4);
+        ctx.fill();
+      }
+    }
+    for (const c of G.cats) {
+      if (c.row !== r) continue;
+      drawCat(bctx, c.x, catRowY(r), c.size, c.type, G.time + c.phase, {
+        eating: !!c.eating, sleeping: c.sleeping, sleepT: c.sleepT, flash: c.flash,
+        pose: c.pose, moonwalk: c.moonwalk,
+        stretch: c.resting ? Math.sin(Math.PI * clamp(c.stretchT / 2.0, 0, 1)) : 0,
+      });
+      if (c.type === 'boss' && !c.sleeping) {
+        const bw = 90, px = c.x, by = catRowY(r) - c.size * 2.05;
+        ctx.fillStyle = 'rgba(92,68,50,.3)';
+        rr(ctx, px - bw / 2, by, bw, 9, 5);
+        ctx.fill();
+        ctx.fillStyle = '#F2778E';
+        rr(ctx, px - bw / 2, by, bw * clamp(c.hp / c.maxHp, 0, 1), 9, 5);
+        ctx.fill();
+      }
+    }
+  }
+
+  // 羽毛
+  for (const f of G.feathers) drawFeather(bctx, f.x, catRowY(f.row) - 46, 16, f.t);
+
+  // 鈴鐺
+  for (const b of G.fieldBells) {
+    const blink = b.life - b.born < 2 ? (Math.sin(b.born * 12) * 0.5 + 0.5) * 0.7 + 0.3 : 1;
+    drawBell(bctx, b.x, b.dropY, 20, b.born, blink);
+  }
+
+  // 特效
+  for (const e of G.fx) {
+    const k = e.t / e.life;
+    ctx.save();
+    ctx.globalAlpha = 1 - k;
+    if (e.kind === 'puff') {
+      ctx.fillStyle = '#FFF';
+      for (let i = 0; i < 5; i++) {
+        const a = i * Math.PI * 2 / 5;
+        ctx.beginPath();
+        ctx.arc(e.x + Math.cos(a) * 24 * k, e.y + Math.sin(a) * 20 * k, 10 * (1 - k * 0.5), 0, 7);
+        ctx.fill();
+      }
+    } else if (e.kind === 'spark') {
+      ctx.fillStyle = '#F9A8C2';
+      for (let i = 0; i < 6; i++) {
+        const a = i * Math.PI / 3;
+        ctx.beginPath();
+        ctx.arc(e.x + Math.cos(a) * 26 * k, e.y + Math.sin(a) * 26 * k, 4, 0, 7);
+        ctx.fill();
+      }
+    } else if (e.kind === 'text') {
+      ctx.font = `800 ${e.size || 22}px "Yuanti TC","Microsoft JhengHei",sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#D97F2E';
+      ctx.strokeStyle = '#FFF';
+      ctx.lineWidth = 5;
+      ctx.strokeText(e.text, e.x, e.y - k * 34);
+      ctx.fillText(e.text, e.x, e.y - k * 34);
+    } else if (e.kind === 'zzz') {
+      ctx.font = '700 22px sans-serif';
+      ctx.fillStyle = '#8B95A6';
+      ctx.fillText('z', e.x + k * 18, e.y - k * 26);
+      ctx.font = '700 15px sans-serif';
+      ctx.fillText('z', e.x + 14 + k * 22, e.y - 10 - k * 30);
+    }
+    ctx.restore();
+  }
+}
+
+/* ---------- HUD / 卡片 ---------- */
+function updateHUD() {
+  $('bellCount').textContent = G.bells;
+  const hearts = $('hudHearts').children;
+  for (let i = 0; i < 3; i++) hearts[i].classList.toggle('off', i >= G.hearts);
+  $('hudWave').textContent = `第 ${Math.max(1, G.waveIdx + 1)} / ${WAVES.length} 波`;
+}
+
+const cardEls = {};
+function buildToybar() {
+  const bar = $('toybar');
+  bar.innerHTML = '';
+  for (const key of ['bell', 'wand', 'box']) {
+    const t = TOYS[key];
+    const btn = document.createElement('button');
+    btn.className = 'toy-card';
+    btn.setAttribute('aria-label', `${t.name}，${t.cost} 鈴鐺`);
+    const cv = document.createElement('canvas');
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    cv.width = 52 * dpr; cv.height = 52 * dpr;
+    const c2 = cv.getContext('2d');
+    c2.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (key === 'bell') drawBellToy(c2, 26, 47, 20, 0.4);
+    else if (key === 'wand') drawWandToy(c2, 28, 49, 20, 0.4);
+    else drawBoxToy(c2, 26, 48, 22, 0);
+    const nm = document.createElement('span');
+    nm.className = 'tname'; nm.textContent = t.name;
+    const cost = document.createElement('span');
+    cost.className = 'tcost'; cost.textContent = '🔔' + t.cost;
+    const cd = document.createElement('div');
+    cd.className = 'cd';
+    btn.append(cv, nm, cost, cd);
+    btn.addEventListener('click', () => {
+      Sfx.unlock();
+      if (G.state !== 'playing') return;
+      if (G.cardCd[key] > 0 || G.bells < t.cost) {
+        btn.classList.remove('shake'); void btn.offsetWidth; btn.classList.add('shake');
+        return;
+      }
+      G.selected = G.selected === key ? null : key;
+      refreshCardSel();
+    });
+    bar.appendChild(btn);
+    cardEls[key] = { btn, cd };
+  }
+}
+function refreshCardSel() {
+  for (const k in cardEls) cardEls[k].btn.classList.toggle('sel', G.selected === k);
+}
+function updateCards() {
+  for (const k in cardEls) {
+    const t = TOYS[k];
+    cardEls[k].cd.style.height = (G.cardCd[k] / t.cd * 100) + '%';
+    cardEls[k].btn.classList.toggle('dim', G.bells < t.cost && G.cardCd[k] <= 0);
+  }
+  $('bellCount').textContent = G.bells;
+}
+
+/* ---------- 輸入 ---------- */
+function boardPos(e) {
+  const r = board.getBoundingClientRect();
+  return [(e.clientX - r.left) / r.width * BOARD_W, (e.clientY - r.top) / r.height * BOARD_H];
+}
+board.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  Sfx.unlock();
+  if (G.state !== 'playing') return;
+  const [x, y] = boardPos(e);
+  // 先撿鈴鐺（判定半徑依實際顯示尺寸換算，手機上保持約 34 CSS px 好點）
+  const tapR = Math.max(38, 34 * BOARD_W / board.getBoundingClientRect().width);
+  let picked = null;
+  for (const b of G.fieldBells) {
+    const d = Math.hypot(b.x - x, b.dropY - y);
+    if (d < tapR && (!picked || d < picked.d)) picked = { b, d };
+  }
+  if (picked) {
+    G.fieldBells.splice(G.fieldBells.indexOf(picked.b), 1);
+    G.bells += picked.b.value;
+    Sfx.ding(true);
+    addFx('text', { x: picked.b.x, y: picked.b.dropY - 16, text: '+' + picked.b.value, life: 0.8, size: 24 });
+    updateHUD();
+    return;
+  }
+  // 放玩具
+  if (G.selected) {
+    const col = Math.floor((x - LEFT) / CELL_W), row = Math.floor(y / CELL_H);
+    if (row >= 0 && row < ROWS && col >= 0 && col < COLS && !G.grid[row][col]) {
+      if (G.bells >= TOYS[G.selected].cost) {
+        plantAt(G.selected, row, col);
+        G.selected = null;
+        refreshCardSel();
+      }
+    }
+  }
+});
+board.addEventListener('pointermove', e => {
+  const [x, y] = boardPos(e);
+  G.hoverCell = [Math.floor(y / CELL_H), Math.floor((x - LEFT) / CELL_W)];
+});
+board.addEventListener('pointerleave', () => { G.hoverCell = null; });
+
+/* ---------- 主迴圈 ---------- */
+let lastT = 0;
+function loop(now) {
+  requestAnimationFrame(loop);
+  const dt = Math.min((now - lastT) / 1000, 0.05);
+  lastT = now;
+  if (G.state === 'playing') {
+    update(dt);
+    render();
+  } else if (G.state === 'paused') {
+    render();
+  }
+}
+requestAnimationFrame(t => { lastT = t; requestAnimationFrame(loop); });
+
+/* ---------- 畫面切換 ---------- */
+function show(screen) {
+  $('home').classList.toggle('hidden', screen !== 'home');
+  $('game').classList.toggle('hidden', screen !== 'game');
+}
+function startGame() {
+  resetGame();
+  G.state = 'playing';
+  show('game');
+  $('endOverlay').classList.add('hidden');
+  $('pauseOverlay').classList.add('hidden');
+  closeModal('qrModal');
+  closeModal('howModal');
+  document.querySelectorAll('.confetti').forEach(el => el.remove());
+  resizeBoard();
+  render();
+}
+function pauseGame(on) {
+  if (G.state !== 'playing' && G.state !== 'paused') return;
+  G.state = on ? 'paused' : 'playing';
+  $('pauseOverlay').classList.toggle('hidden', !on);
+  $('game').classList.toggle('paused', on);
+}
+function goHome() {
+  G.state = 'home';
+  $('pauseOverlay').classList.add('hidden');
+  $('endOverlay').classList.add('hidden');
+  show('home');
+  startHero();
+}
+
+$('btnStart').addEventListener('click', () => { Sfx.unlock(); startGame(); });
+$('btnPause').addEventListener('click', () => { Sfx.unlock(); pauseGame(G.state === 'playing'); });
+$('btnResume').addEventListener('click', () => pauseGame(false));
+$('btnRestart').addEventListener('click', startGame);
+$('btnPauseHome').addEventListener('click', goHome);
+$('btnAgain').addEventListener('click', startGame);
+$('btnEndHome').addEventListener('click', goHome);
+$('btnMute').addEventListener('click', () => {
+  const m = Sfx.toggleMute();
+  $('btnMute').textContent = m ? '🔇' : '🔊';
+});
+$('btnMute').textContent = Sfx.muted ? '🔇' : '🔊';
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && G.state === 'playing') pauseGame(true);
+});
+window.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (!$('qrModal').classList.contains('hidden')) { closeModal('qrModal'); return; }
+    if (!$('howModal').classList.contains('hidden')) { closeModal('howModal'); return; }
+  }
+  if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') {
+    if (G.state === 'playing') pauseGame(true);
+    else if (G.state === 'paused') pauseGame(false);
+  }
+});
+
+/* ---------- 彈窗（開關 + 焦點管理） ---------- */
+let modalOpener = null;
+function openModal(id, opener) {
+  modalOpener = opener || null;
+  $(id).classList.remove('hidden');
+  const btn = $(id).querySelector('button');
+  if (btn && btn.focus) btn.focus();
+}
+function closeModal(id) {
+  if ($(id).classList.contains('hidden')) return;
+  $(id).classList.add('hidden');
+  if (modalOpener && modalOpener.focus) modalOpener.focus();
+  modalOpener = null;
+}
+
+/* ---------- QR Modal ---------- */
+$('btnQR').addEventListener('click', () => {
+  Sfx.unlock();
+  const url = GAME_URL || (location.href.startsWith('http') ? location.href : '');
+  const cv = $('qrCanvas'), info = $('qrUrl');
+  if (!url) {
+    info.textContent = '（遊戲發佈到正式網址後，這裡就會出現 QR Code）';
+    cv.style.display = 'none';
+  } else {
+    const qr = QR.encode(url);
+    if (qr) {
+      cv.style.display = '';
+      const quiet = 3, scale = 8, dim = (qr.size + quiet * 2) * scale;
+      cv.width = dim; cv.height = dim;
+      const c2 = cv.getContext('2d');
+      c2.fillStyle = '#FFF';
+      c2.fillRect(0, 0, dim, dim);
+      c2.fillStyle = '#3A2C1E';
+      for (let r = 0; r < qr.size; r++) for (let c = 0; c < qr.size; c++) {
+        if (qr.modules[r][c]) c2.fillRect((c + quiet) * scale, (r + quiet) * scale, scale, scale);
+      }
+    }
+    info.textContent = url;
+  }
+  openModal('qrModal', $('btnQR'));
+});
+$('btnQrClose').addEventListener('click', () => closeModal('qrModal'));
+$('qrModal').addEventListener('click', e => { if (e.target === $('qrModal')) closeModal('qrModal'); });
+
+$('btnHow').addEventListener('click', () => { Sfx.unlock(); openModal('howModal', $('btnHow')); });
+$('btnHowClose').addEventListener('click', () => closeModal('howModal'));
+$('howModal').addEventListener('click', e => { if (e.target === $('howModal')) closeModal('howModal'); });
+
+/* ---------- 首頁動畫 ---------- */
+function startHero() {
+  const cv = $('heroCanvas'), ctx = cv.getContext('2d');
+  const t0 = performance.now();
+  (function heroLoop() {
+    if (G.state !== 'home') return;
+    requestAnimationFrame(heroLoop);
+    const t = (performance.now() - t0) / 1000;
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    // 地毯
+    ctx.fillStyle = '#FBEBD3';
+    ctx.beginPath();
+    ctx.ellipse(430, 268, 380, 30, 0, 0, 7);
+    ctx.fill();
+    drawWandToy(ctx, 130, 262, 52, t);
+    drawBellToy(ctx, 255, 262, 46, t + 1);
+    drawBoxToy(ctx, 385, 260, 52, t, 0);
+    const hop = b => -Math.abs(Math.sin(t * 3 + b)) * 16;
+    drawCat(ctx, 540, 262 + hop(0), 46, 'orange', t, {});
+    drawCat(ctx, 665, 264 + hop(1.2), 40, 'calico', t + 2, {});
+    drawCat(ctx, 780, 264 + hop(2.1), 36, 'gray', t + 4, {});
+  })();
+  drawPawBg();
+}
+
+// 首頁背景肉球（鋪滿整個畫面，resize 時重畫）
+function drawPawBg() {
+  const pb = $('pawBg');
+  pb.width = pb.clientWidth || innerWidth;
+  pb.height = pb.clientHeight || innerHeight;
+  const pctx = pb.getContext('2d');
+  pctx.fillStyle = 'rgba(245,155,75,.08)';
+  for (let i = 0; i < 24; i++) {
+    const x = rand(0, pb.width), y = rand(0, pb.height), s = rand(14, 30);
+    pctx.save();
+    pctx.translate(x, y);
+    pctx.rotate(rand(-0.6, 0.6));
+    pctx.beginPath();
+    pctx.ellipse(0, s * 0.25, s * 0.55, s * 0.45, 0, 0, 7);
+    pctx.fill();
+    for (let j = -1; j <= 1; j++) {
+      pctx.beginPath();
+      pctx.arc(j * s * 0.42, -s * 0.35 - (j === 0 ? s * 0.12 : 0), s * 0.18, 0, 7);
+      pctx.fill();
+    }
+    pctx.restore();
+  }
+}
+
+/* ---------- 初始化 ---------- */
+buildToybar();
+window.addEventListener('resize', () => {
+  resizeBoard();
+  if (G.state === 'home') drawPawBg();
+});
+resizeBoard();
+startHero();
+</script>
+
+</body>
+</html>
