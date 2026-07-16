@@ -152,9 +152,23 @@
 
   #rotateHint {
     position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); z-index: 30;
-    background: rgba(92, 68, 50, .85); color: var(--white); font-size: 13px;
-    padding: 8px 16px; border-radius: 999px; letter-spacing: .08em; white-space: nowrap;
-    pointer-events: none;
+    background: rgba(92, 68, 50, .88); color: var(--white); font-size: 14px;
+    padding: 10px 18px; border-radius: 999px; letter-spacing: .08em; white-space: nowrap;
+    border: none; box-shadow: 0 4px 10px var(--shadow);
+  }
+  #rotateHint:active { transform: translateX(-50%) scale(.96); }
+  /* 桌機（滑鼠）不需要橫式切換鈕 */
+  @media (hover: hover) and (pointer: fine) {
+    #btnRotate, #rotateHint { display: none !important; }
+  }
+  /* 強制橫式：把整個畫面順時針轉 90 度（iOS 等無法原生鎖定方向時的後備方案） */
+  #app.force-landscape {
+    inset: 0 auto auto 100vw;
+    width: 100vh; width: 100dvh;
+    height: 100vw; height: 100dvw;
+    transform: rotate(90deg);
+    transform-origin: left top;
+    padding: 0;
   }
 
   /* ---------- Overlays ---------- */
@@ -174,19 +188,18 @@
 
   .confetti { position: absolute; top: -24px; font-size: 22px; animation: confFall linear forwards; pointer-events: none; z-index: 45; }
   @keyframes confFall { to { transform: translateY(115vh) rotate(720deg); } }
-  /* 橫向矮螢幕（手機橫拿）：壓縮 HUD 與卡片，把空間留給戰場 */
-  @media (max-height: 500px) {
-    #hud { padding: 4px 8px; gap: 6px; }
-    .hud-chip { font-size: 13px; padding: 3px 10px; }
-    .hud-btn { width: 34px; height: 34px; font-size: 15px; }
-    #toybar { padding: 3px 6px 6px; gap: 8px; }
-    .toy-card { width: 78px; padding: 3px 2px 4px; }
-    .toy-card canvas { width: 34px; height: 34px; }
-    .toy-card .tname { font-size: 11px; }
-    .toy-card .tcost { font-size: 11px; }
-    #home { justify-content: flex-start; gap: 10px; }
-    #heroCanvas { width: min(300px, 55vw); }
-  }
+  /* 呈現高度過矮（手機橫拿或強制橫式）：壓縮 HUD 與卡片，把空間留給戰場。
+     由 JS 依「呈現方向的實際高度」切換 .compact（media query 抓不到 CSS 旋轉後的方向） */
+  #app.compact #hud { padding: 4px 8px; gap: 6px; }
+  #app.compact .hud-chip { font-size: 13px; padding: 3px 10px; }
+  #app.compact .hud-btn { width: 34px; height: 34px; font-size: 15px; }
+  #app.compact #toybar { padding: 3px 6px 6px; gap: 8px; }
+  #app.compact .toy-card { width: 78px; padding: 3px 2px 4px; }
+  #app.compact .toy-card canvas { width: 34px; height: 34px; }
+  #app.compact .toy-card .tname { font-size: 11px; }
+  #app.compact .toy-card .tcost { font-size: 11px; }
+  #app.compact #home { justify-content: flex-start; gap: 10px; }
+  #app.compact #heroCanvas { width: min(300px, 55vh); }
   @media (prefers-reduced-motion: reduce) {
     .confetti { display: none; }
     #banner.show { animation-duration: 2.4s; }
@@ -244,13 +257,14 @@
       <div class="hud-chip" id="hudBells"><span class="ico">🔔</span><span id="bellCount">0</span></div>
       <div class="hud-chip" id="hudHearts" aria-label="愛心"><span>❤️</span><span>❤️</span><span>❤️</span></div>
       <div class="hud-chip" id="hudWave">第 1 / 5 波</div>
+      <button class="hud-btn" id="btnRotate" aria-label="切換橫式畫面">🔄</button>
       <button class="hud-btn" id="btnMute" aria-label="音效開關">🔊</button>
       <button class="hud-btn" id="btnPause" aria-label="暫停">⏸️</button>
     </div>
     <div id="boardWrap">
       <canvas id="board"></canvas>
       <div id="banner"></div>
-      <div id="rotateHint" class="hidden">💡 手機橫向遊玩體驗更棒！</div>
+      <button id="rotateHint" class="hidden">🔄 點我切換橫式畫面</button>
     </div>
     <div id="toybar"></div>
   </div>
@@ -1768,13 +1782,15 @@ function resizeBoard() {
   board.width = Math.round(cssW * dpr);
   board.height = Math.round(cssH * dpr);
   viewScale = board.width / BOARD_W;
-  const showHint = window.innerHeight > window.innerWidth && window.innerWidth < 620 && !rotateHintDone;
+  const inGame = G.state === 'playing' || G.state === 'paused';
+  const showHint = inGame && window.innerHeight > window.innerWidth && window.innerWidth < 820 &&
+    !rotateHintDone && !$('app').classList.contains('force-landscape');
   $('rotateHint').classList.toggle('hidden', !showHint);
   if (showHint && !rotateHintTimer) {
     rotateHintTimer = setTimeout(() => {
       rotateHintDone = true;
       $('rotateHint').classList.add('hidden');
-    }, 6000);
+    }, 10000);
   }
   // 重設 canvas 尺寸會清空點陣，凍結中的畫面（暫停/勝負結算）要立刻補畫
   if (G.state === 'playing' || G.state === 'paused' || G.state === 'end') render();
@@ -2007,9 +2023,53 @@ function updateCards() {
   $('bellCount').textContent = G.bells;
 }
 
+/* ---------- 橫式切換 ---------- */
+let forceLandscape = false;
+try { forceLandscape = localStorage.getItem('catgame-landscape') === '1'; } catch (e) {}
+
+function isPortrait() { return window.innerHeight > window.innerWidth; }
+function cssRotated() { return $('app').classList.contains('force-landscape'); }
+
+// 依視窗方向套用：直式 + 開啟橫式 → CSS 旋轉 90°；並依呈現高度切換緊湊版面
+function applyOrientation() {
+  $('app').classList.toggle('force-landscape', forceLandscape && isPortrait());
+  const presentedH = cssRotated() ? window.innerWidth : window.innerHeight;
+  $('app').classList.toggle('compact', presentedH < 500);
+  resizeBoard();
+  if (G.state === 'home') drawPawBg();
+}
+
+function toggleLandscape() {
+  forceLandscape = !forceLandscape;
+  try { localStorage.setItem('catgame-landscape', forceLandscape ? '1' : '0'); } catch (e) {}
+  const scr = typeof screen !== 'undefined' ? screen : null;
+  if (forceLandscape) {
+    // 先試原生全螢幕 + 方向鎖定（Android）；失敗就交給 CSS 旋轉後備
+    try {
+      const el = document.documentElement;
+      const fs = el.requestFullscreen ? el.requestFullscreen() : Promise.reject();
+      Promise.resolve(fs)
+        .then(() => scr && scr.orientation && scr.orientation.lock ? scr.orientation.lock('landscape') : null)
+        .catch(() => {})
+        .then(() => applyOrientation());
+    } catch (e) {}
+  } else {
+    try { if (scr && scr.orientation && scr.orientation.unlock) scr.orientation.unlock(); } catch (e) {}
+    try { if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {}); } catch (e) {}
+  }
+  applyOrientation();
+}
+
 /* ---------- 輸入 ---------- */
 function boardPos(e) {
   const r = board.getBoundingClientRect();
+  if (cssRotated()) {
+    // 畫面順時針轉了 90°：canvas 的 x 軸對應螢幕往下，y 軸對應螢幕往左
+    return [
+      (e.clientY - r.top) / r.height * BOARD_W,
+      (r.right - e.clientX) / r.width * BOARD_H,
+    ];
+  }
   return [(e.clientX - r.left) / r.width * BOARD_W, (e.clientY - r.top) / r.height * BOARD_H];
 }
 board.addEventListener('pointerdown', e => {
@@ -2108,6 +2168,13 @@ $('btnMute').addEventListener('click', () => {
   $('btnMute').textContent = m ? '🔇' : '🔊';
 });
 $('btnMute').textContent = Sfx.muted ? '🔇' : '🔊';
+$('btnRotate').addEventListener('click', () => { Sfx.unlock(); toggleLandscape(); });
+$('rotateHint').addEventListener('click', () => {
+  Sfx.unlock();
+  rotateHintDone = true;
+  $('rotateHint').classList.add('hidden');
+  if (!forceLandscape) toggleLandscape();
+});
 
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && G.state === 'playing') pauseGame(true);
@@ -2222,11 +2289,11 @@ function drawPawBg() {
 
 /* ---------- 初始化 ---------- */
 buildToybar();
-window.addEventListener('resize', () => {
-  resizeBoard();
-  if (G.state === 'home') drawPawBg();
-});
-resizeBoard();
+window.addEventListener('resize', applyOrientation);
+if (typeof screen !== 'undefined' && screen.orientation && screen.orientation.addEventListener) {
+  screen.orientation.addEventListener('change', applyOrientation);
+}
+applyOrientation();
 startHero();
 </script>
 
