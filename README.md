@@ -4,4 +4,6 @@
 
 ▶ 立即遊玩（免登入）：https://ucomdemo.github.io/toys-vs-fat-cats/
 
+開發專案：https://spark.github.com
+
 支援電腦滑鼠與手機觸控。單一 HTML 檔，無任何外部相依。
