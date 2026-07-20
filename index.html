@@ -637,16 +637,29 @@ function catLoaf(ctx, w, h) {
   ctx.closePath();
 }
 
-// 側面走路姿（頭在左、長身體）。由 drawCat 分派，座標系已置於腳底中央。
+// 側面走路姿（大頭在前、短胖身體、四條小短腿）。由 drawCat 分派，座標系已置於腳底中央。
 function drawCatSide(ctx, s, st, t, o) {
   const lw = o.lw;
-  const W2 = s * 1.42, H2 = s * 1.0;
+  const W2 = s * 1.18, H2 = s * 1.16, legH = s * 0.16;
+  const step = o.eating ? 0 : Math.sin(t * 7) * s * 0.05;
+
+  const leg = (lx, ph) => {
+    rr(ctx, lx - s * 0.1 + ph, -s * 0.42, s * 0.2, s * 0.42, s * 0.1);
+    ctx.fill();
+    ctx.stroke();
+  };
+  // 遠側前後腿（先畫，被身體半遮）
+  ctx.fillStyle = st.body;
+  ctx.strokeStyle = st.line;
+  ctx.lineWidth = lw * 0.85;
+  leg(-W2 * 0.42, -step);
+  leg(W2 * 0.62, step);
 
   // 尾巴（屁股端翹起搖擺）
   const wag = Math.sin(t * 4.5) * 0.25;
   ctx.save();
-  ctx.translate(W2 * 0.92, -H2 * 0.6);
-  ctx.rotate(-0.9 + wag * 0.3);
+  ctx.translate(W2 * 0.85, -H2 * 0.72 - legH);
+  ctx.rotate(-0.85 + wag * 0.3);
   ctx.fillStyle = st.body;
   ctx.strokeStyle = st.line;
   ctx.lineWidth = lw;
@@ -671,14 +684,15 @@ function drawCatSide(ctx, s, st, t, o) {
   }
   ctx.restore();
 
-  // 長吐司身體
+  // 短胖身體（墊在腿上）
+  ctx.save();
+  ctx.translate(0, -legH);
   ctx.fillStyle = st.body;
   ctx.strokeStyle = st.line;
   ctx.lineWidth = lw;
   catLoaf(ctx, W2, H2);
   ctx.fill();
   ctx.stroke();
-
   // 身體花色
   ctx.save();
   catLoaf(ctx, W2, H2);
@@ -688,55 +702,53 @@ function drawCatSide(ctx, s, st, t, o) {
     ctx.lineWidth = s * 0.12;
     for (let i = 0; i < 3; i++) {
       ctx.beginPath();
-      ctx.moveTo(-s * 0.15 + i * s * 0.45, -H2 - 2);
-      ctx.lineTo(-s * 0.15 + i * s * 0.45, -H2 + s * 0.24);
+      ctx.moveTo(-s * 0.28 + i * s * 0.44, -H2 - 2);
+      ctx.lineTo(-s * 0.28 + i * s * 0.44, -H2 + s * 0.24);
       ctx.stroke();
     }
   } else if (st.pattern === 'calico') {
     ctx.fillStyle = st.patch[0];
     ctx.beginPath();
-    ctx.ellipse(W2 * 0.45, -H2 * 0.8, s * 0.4, s * 0.32, 0.2, 0, 7);
+    ctx.ellipse(W2 * 0.5, -H2 * 0.78, s * 0.38, s * 0.32, 0.2, 0, 7);
     ctx.fill();
     ctx.fillStyle = st.patch[1];
     ctx.beginPath();
-    ctx.ellipse(-W2 * 0.15, -H2 * 0.92, s * 0.3, s * 0.24, -0.2, 0, 7);
+    ctx.ellipse(-W2 * 0.2, -H2 * 0.9, s * 0.28, s * 0.22, -0.2, 0, 7);
     ctx.fill();
   } else if (st.pattern === 'tux') {
     ctx.fillStyle = '#FFFFFF';
     ctx.beginPath();
-    ctx.ellipse(-W2 * 0.5, -H2 * 0.4, s * 0.5, s * 0.45, 0, 0, 7);
+    ctx.ellipse(-W2 * 0.55, -H2 * 0.35, s * 0.48, s * 0.42, 0, 0, 7);
     ctx.fill();
   }
   ctx.fillStyle = st.belly;
   ctx.beginPath();
-  ctx.ellipse(0, s * 0.05, W2 * 0.7, s * 0.32, 0, 0, 7);
+  ctx.ellipse(0, -s * 0.02, W2 * 0.72, s * 0.3, 0, 0, 7);
   ctx.fill();
   ctx.restore();
+  ctx.restore();
 
-  // 腳掌分縫
+  // 近側前後腿（蓋在身體上）
+  ctx.fillStyle = st.body;
   ctx.strokeStyle = st.line;
   ctx.lineWidth = lw * 0.85;
-  for (const px2 of [-s * 0.75, -s * 0.15, s * 0.5]) {
-    ctx.beginPath();
-    ctx.moveTo(px2, 0);
-    ctx.lineTo(px2, -s * 0.12);
-    ctx.stroke();
-  }
+  leg(-W2 * 0.66, step);
+  leg(W2 * 0.38, -step);
 
-  // 頭（前上方圓頭）
-  const hx = -W2 * 0.72, hy = -H2 - s * 0.28, hr = s * 0.62;
+  // 頭（大顆，與身體前端相融）
+  const hx = -W2 * 0.82, hy = -H2 - legH + s * 0.14, hr = s * 0.76;
   // 耳朵
-  for (const [ex, rot] of [[-0.32, -0.15], [0.34, 0.15]]) {
+  for (const [ex, rot] of [[-0.42, -0.18], [0.44, 0.18]]) {
     ctx.fillStyle = (st.pattern === 'calico' && ex > 0) ? st.patch[1] : st.body;
     ctx.strokeStyle = st.line;
     ctx.lineWidth = lw;
     ctx.save();
-    ctx.translate(hx + ex * hr * 1.35, hy - hr * 0.62);
+    ctx.translate(hx + ex * hr, hy - hr * 0.72);
     ctx.rotate(rot);
     ctx.beginPath();
-    ctx.moveTo(-s * 0.17, s * 0.22);
-    ctx.quadraticCurveTo(-s * 0.1, -s * 0.28, s * 0.06, -s * 0.22);
-    ctx.quadraticCurveTo(s * 0.2, -s * 0.05, s * 0.17, s * 0.22);
+    ctx.moveTo(-s * 0.2, s * 0.26);
+    ctx.quadraticCurveTo(-s * 0.12, -s * 0.32, s * 0.07, -s * 0.26);
+    ctx.quadraticCurveTo(s * 0.24, -s * 0.06, s * 0.2, s * 0.26);
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
@@ -777,20 +789,20 @@ function drawCatSide(ctx, s, st, t, o) {
   ctx.restore();
   // 內耳
   ctx.fillStyle = '#F6B7C4';
-  for (const [ex, rot] of [[-0.32, -0.15], [0.34, 0.15]]) {
+  for (const [ex, rot] of [[-0.42, -0.18], [0.44, 0.18]]) {
     ctx.save();
-    ctx.translate(hx + ex * hr * 1.35, hy - hr * 0.66);
+    ctx.translate(hx + ex * hr, hy - hr * 0.76);
     ctx.rotate(rot);
     ctx.beginPath();
-    ctx.ellipse(0, -s * 0.02, s * 0.08, s * 0.12, 0, 0, 7);
+    ctx.ellipse(0, -s * 0.02, s * 0.09, s * 0.13, 0, 0, 7);
     ctx.fill();
     ctx.restore();
   }
   // 臉（朝行進方向）
-  const ex0 = hx - hr * 0.35, ey0 = hy - hr * 0.05;
+  const ex0 = hx - hr * 0.3, ey0 = hy - hr * 0.1;
   ctx.fillStyle = 'rgba(246,140,159,.42)';
   ctx.beginPath();
-  ctx.ellipse(ex0 + s * 0.05, ey0 + s * 0.28, s * 0.13, s * 0.08, 0, 0, 7);
+  ctx.ellipse(hx - hr * 0.35, hy + hr * 0.34, s * 0.13, s * 0.08, 0, 0, 7);
   ctx.fill();
   if (o.happy) {
     ctx.strokeStyle = '#5A4634';
@@ -811,20 +823,20 @@ function drawCatSide(ctx, s, st, t, o) {
   // 鼻嘴（頭的前緣）
   ctx.fillStyle = '#F2778E';
   ctx.beginPath();
-  ctx.ellipse(hx - hr * 0.92, hy + hr * 0.12, s * 0.045, s * 0.035, 0, 0, 7);
+  ctx.ellipse(hx - hr * 0.88, hy + hr * 0.06, s * 0.045, s * 0.035, 0, 0, 7);
   ctx.fill();
   ctx.strokeStyle = '#5A4634';
   ctx.lineWidth = s * 0.04;
   ctx.beginPath();
-  ctx.arc(hx - hr * 0.82, hy + hr * 0.24, s * 0.07, Math.PI * 0.15, Math.PI * 0.95);
+  ctx.arc(hx - hr * 0.76, hy + hr * 0.16, s * 0.07, Math.PI * 0.15, Math.PI * 0.95);
   ctx.stroke();
-  // 鬍鬚
+  // 鬍鬚（從臉頰往身體方向後掃，微微下垂）
   ctx.strokeStyle = 'rgba(90,70,52,.5)';
   ctx.lineWidth = s * 0.033;
   for (let i = 0; i < 2; i++) {
     ctx.beginPath();
-    ctx.moveTo(hx - hr * 0.75, hy + hr * (0.3 + i * 0.18));
-    ctx.quadraticCurveTo(hx - hr * 1.25, hy + hr * (0.28 + i * 0.22), hx - hr * 1.45, hy + hr * (0.36 + i * 0.26));
+    ctx.moveTo(hx - hr * 0.48, hy + hr * (0.18 + i * 0.14));
+    ctx.quadraticCurveTo(hx + hr * 0.02, hy + hr * (0.3 + i * 0.16), hx + hr * 0.4, hy + hr * (0.26 + i * 0.24));
     ctx.stroke();
   }
   // 吃東西揮手手
@@ -834,7 +846,7 @@ function drawCatSide(ctx, s, st, t, o) {
     ctx.strokeStyle = st.line;
     ctx.lineWidth = lw * 0.85;
     ctx.beginPath();
-    ctx.ellipse(-W2 * 1.0, -s * 0.45 + sw, s * 0.14, s * 0.2, 0.35, 0, 7);
+    ctx.ellipse(-W2 - s * 0.08, -s * 0.62 + sw, s * 0.14, s * 0.2, 0.35, 0, 7);
     ctx.fill();
     ctx.stroke();
   }
@@ -842,8 +854,11 @@ function drawCatSide(ctx, s, st, t, o) {
   if (o.flash > 0) {
     ctx.globalAlpha = Math.min(o.flash * 4, 0.7);
     ctx.fillStyle = '#FFF';
+    ctx.save();
+    ctx.translate(0, -legH);
     catLoaf(ctx, W2, H2);
     ctx.fill();
+    ctx.restore();
     ctx.beginPath();
     ctx.arc(hx, hy, hr, 0, 7);
     ctx.fill();
@@ -1669,8 +1684,8 @@ function update(dt) {
       }
       continue;
     }
-    // 前方是否有玩具（身體前緣，側面姿勢頭伸得比較長）
-    const frontX = c.x - c.size * (c.pose === 'side' ? 1.45 : 0.95);
+    // 前方是否有玩具（身體前緣，側面姿勢鼻頭伸得比較長）
+    const frontX = c.x - c.size * (c.pose === 'side' ? 1.65 : 0.95);
     const col = Math.floor((frontX - LEFT) / CELL_W);
     let plant = null;
     if (col >= 0 && col < COLS) {
